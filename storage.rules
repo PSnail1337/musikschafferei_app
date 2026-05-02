@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: user must be signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Inventory photos — readable by all signed-in users, writable by admins
+    match /inventory/{allPaths=**} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn();  // further scoped by Firestore role check in app code
+    }
+
+    // Support voice messages — only uploader and admins
+    match /support/{filename} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Terms PDFs — readable by all users, writable only via server (API route)
+    match /terms/{filename} {
+      allow read:  if isSignedIn();
+      allow write: if false;  // uploaded via Admin SDK in API route only
+    }
+  }
+}

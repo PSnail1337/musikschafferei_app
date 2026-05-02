@@ -1,0 +1,72 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "buchungen",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cancelled",  "order": "ASCENDING" },
+        { "fieldPath": "startTime",  "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "buchungen",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "roomIds",    "arrayConfig": "CONTAINS" },
+        { "fieldPath": "cancelled",  "order": "ASCENDING" },
+        { "fieldPath": "startTime",  "order": "ASCENDING" },
+        { "fieldPath": "endTime",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "buchungen",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId",    "order": "ASCENDING" },
+        { "fieldPath": "cancelled", "order": "ASCENDING" },
+        { "fieldPath": "startTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "support_tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId",    "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "support_tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status",    "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lager_log",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "articleId", "order": "ASCENDING" },
+        { "fieldPath": "changedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ratings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subjectUid", "order": "ASCENDING" },
+        { "fieldPath": "ratedBy",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "masterId",     "order": "ASCENDING" },
+        { "fieldPath": "displayName",  "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
