@@ -37,7 +37,7 @@ const config: Config = {
         'text-primary': 'var(--text-primary)',
         'text-secondary': 'var(--text-secondary)',
         'text-tertiary': 'var(--text-tertiary)',
-        accent: 'var(--accent)',
+        accent: 'rgb(var(--accent) / <alpha-value>)',
         danger: 'var(--danger)',
         success: 'var(--success)',
         warning: 'var(--warning)',
