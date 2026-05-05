@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ─────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    function role() {
+      return userDoc().role;
+    }
+
+    function userType() {
+      return userDoc().userType;
+    }
+
+    function isMainMaster() {
+      return role() == 'main-master';
+    }
+
+    function isMaster() {
+      return role() in ['master', 'main-master'];
+    }
+
+    function isAdmin() {
+      return role() in ['admin', 'master', 'main-master'];
+    }
+
+    function isMitglied() {
+      return isSignedIn();
+    }
+
+    function isSchueler() {
+      return userType() == 'schüler';
+    }
+
+    function isOwn(userId) {
+      return uid() == userId;
+    }
+
+    function isActive() {
+      return userDoc().active == true;
+    }
+
+    // ─── users ────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwn(userId) || isAdmin());
+      allow create: if isSignedIn() && isOwn(userId);  // only on first sign-up
+      allow update: if isSignedIn() && (
+        // Users can update their own non-privileged fields
+        (isOwn(userId) && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
+        || isMainMaster()  // Main-Master can change anything
+        || (isMaster() && resource.data.masterId == uid())  // Master can update own circle
+      );
+      allow delete: if false;  // never hard-delete users
+    }
+
+    // ─── buchungen (bookings) ─────────────────────────────────
+    match /buchungen/{bookingId} {
+      allow read:   if isSignedIn() && !isSchueler();
+      allow create: if isSignedIn() && !isSchueler() && isActive()
+                       && request.resource.data.userId == uid();
+      allow update: if isSignedIn() && (
+        // User can only cancel their own booking
+        (isOwn(resource.data.userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancelled', 'cancelledAt', 'cancelledBy', 'updatedAt']))
+        || isAdmin()
+      );
+      allow delete: if false;
+    }
+
+    // ─── lager_artikel (inventory) ───────────────────────────
+    match /lager_artikel/{articleId} {
+      allow read:   if isSignedIn();  // all roles can view
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false;  // soft-delete only
+    }
+
+    // ─── lager_log (inventory change log) ────────────────────
+    match /lager_log/{logId} {
+      allow read:  if isMainMaster();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // ─── lager_suche_log (inventory search log) ───────────────
+    match /lager_suche_log/{logId} {
+      allow read:   if isMaster();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // ─── lager_dropdowns ─────────────────────────────────────
+    match /lager_dropdowns/{dropId} {
+      allow read:   if isAdmin();
+      allow write:  if isMainMaster();
+    }
+
+    // ─── nutzungsbedingungen (terms) ─────────────────────────
+    match /nutzungsbedingungen/{docId} {
+      allow read:  if isSignedIn();
+      allow write: if isMainMaster();
+    }
+
+    // ─── support_tickets ─────────────────────────────────────
+    match /support_tickets/{ticketId} {
+      allow read:  if isSignedIn() && (isOwn(resource.data.userId) || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == uid();
+      allow update: if isAdmin();  // status changes, admin notes
+      allow delete: if false;
+    }
+
+    // ─── ratings ─────────────────────────────────────────────
+    match /ratings/{ratingId} {
+      // Only Masters can see ratings; raters see their own
+      allow read:  if isMaster();
+      allow create: if isMaster();
+      allow update: if isMaster() && isOwn(resource.data.ratedBy);
+      allow delete: if false;
+    }
+
+    // ─── rating_gewichtung ────────────────────────────────────
+    match /rating_gewichtung/{docId} {
+      allow read:  if isMaster();
+      allow write: if isMainMaster();
+    }
+
+    // ─── rating_aggregate ─────────────────────────────────────
+    match /rating_aggregate/{uid} {
+      allow read:  if isMaster();
+      allow write: if false;  // only written by Cloud Functions / server
+    }
+
+    // ─── app_config ───────────────────────────────────────────
+    match /app_config/{docId} {
+      allow read:  if isSignedIn();
+      allow write: if isMainMaster();
+    }
+
+    // ─── translations cache ───────────────────────────────────
+    match /translations/{hash} {
+      allow read:  if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // ─── raeume, standorte ────────────────────────────────────
+    match /raeume/{roomId} {
+      allow read:  if isSignedIn();
+      allow write: if isMainMaster();
+    }
+
+    match /standorte/{siteId} {
+      allow read:  if isSignedIn();
+      allow write: if isMainMaster();
+    }
+  }
+}

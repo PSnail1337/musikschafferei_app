@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design token CSS variables ─────────────────────────────── */
+:root {
+  /* Light mode */
+  --surface:    #ffffff;
+  --surface-2:  #f8f9fb;
+  --surface-3:  #f0f2f5;
+  --border:     #e8eaed;
+  --text-primary:   #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary:  #9ca3af;
+  --accent:  #5c67f2;
+  --danger:  #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --bottom-nav-height: 80px;
+}
+
+.dark {
+  /* Dark mode — not just inverted, fully re-designed */
+  --surface:    #0f1117;
+  --surface-2:  #1a1d27;
+  --surface-3:  #232637;
+  --border:     #2d3144;
+  --text-primary:   #f1f3f8;
+  --text-secondary: #8b91a8;
+  --text-tertiary:  #5a6175;
+  --accent:  #7b8af9;
+  --danger:  #f87171;
+  --success: #34d399;
+  --warning: #fbbf24;
+}
+
+/* ─── Base ────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-surface text-text-primary;
+    overscroll-behavior: none;
+    min-height: 100dvh;
+  }
+
+  /* Smooth scrolling only if user hasn't opted out */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/* ─── Component layer ─────────────────────────────────────────── */
+@layer components {
+  /* Mobile-safe area for bottom nav */
+  .content-area {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  /* Card */
+  .card {
+    @apply bg-surface rounded-[12px] shadow-card border border-border;
+  }
+
+  /* Pill badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    height: var(--bottom-nav-height);
+    padding-bottom: env(safe-area-inset-bottom);
+    @apply fixed bottom-0 inset-x-0 bg-surface border-t border-border z-50;
+    @apply flex items-start justify-around pt-2;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply w-full rounded-[12px] border border-border bg-surface-2 px-4 py-3
+           text-text-primary placeholder:text-text-tertiary
+           focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent
+           transition-all duration-150;
+  }
+
+  /* Btn variants */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-[12px]
+           bg-brand-500 text-white font-semibold px-5 py-3
+           hover:bg-brand-600 active:scale-[0.98]
+           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-[12px]
+           bg-surface-3 text-text-primary font-semibold px-5 py-3
+           hover:bg-border active:scale-[0.98]
+           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-[12px]
+           bg-danger text-white font-semibold px-5 py-3
+           hover:opacity-90 active:scale-[0.98]
+           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-[12px]
+           text-text-secondary font-medium px-4 py-2.5
+           hover:bg-surface-3 active:scale-[0.98]
+           transition-all duration-150 disabled:opacity-50;
+  }
+
+  /* Status pills */
+  .status-new        { @apply badge bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300; }
+  .status-read       { @apply badge bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300; }
+  .status-inprogress { @apply badge bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300; }
+  .status-done       { @apply badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300; }
+
+  /* Room colour pills */
+  .room-songbird    { @apply bg-songbird/15 text-yellow-800 dark:text-yellow-300; }
+  .room-heros       { @apply bg-heros/15 text-blue-800 dark:text-blue-300; }
+  .room-unstoppable { @apply bg-unstoppable/15 text-purple-800 dark:text-purple-300; }
+  .room-imagine     { @apply bg-imagine/15 text-emerald-800 dark:text-emerald-300; }
+}
+
+/* ─── Utilities ───────────────────────────────────────────────── */
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  /* Scrollbar: slim on desktop, hidden on mobile */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe-area helpers for PWA */
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pl-safe { padding-left: env(safe-area-inset-left); }
+  .pr-safe { padding-right: env(safe-area-inset-right); }
+}
