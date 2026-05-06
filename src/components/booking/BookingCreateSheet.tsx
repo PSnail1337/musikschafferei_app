@@ -100,7 +100,10 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
       if (err instanceof CollisionError || err instanceof DoubleBookingError) {
         toast.error((err as Error).message, { duration: 5000 });
       } else {
-        toast.error('Buchung fehlgeschlagen. Bitte versuche es erneut.');
+        const code = (err as { code?: string }).code ?? 'unknown';
+        const msg  = (err as { message?: string }).message ?? String(err);
+        console.error('[Booking] createBooking failed:', code, msg);
+        toast.error(`Fehler: ${code}`, { duration: 6000 });
       }
     } finally {
       setLoading(false);
@@ -110,7 +113,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end justify-center"
+        className="fixed inset-0 z-[60] flex items-end justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -142,7 +145,8 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="px-5 py-4 space-y-5 overflow-y-auto max-h-[70vh]">
+          <form onSubmit={handleSubmit}>
+          <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[55vh]">
             {/* Room selector */}
             <div>
               <label className="block text-sm font-semibold text-text-primary mb-2">
@@ -247,13 +251,16 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
               />
             </div>
 
-            <button
-              type="submit"
-              className="btn-primary w-full"
-              disabled={loading || selectedRooms.length === 0}
-            >
-              {loading ? 'Bitte warten…' : 'Buchung speichern'}
-            </button>
+          </div>
+          <div className="px-5 py-4 border-t border-border">
+              <button
+                type="submit"
+                className="btn-primary w-full"
+                disabled={loading || selectedRooms.length === 0}
+              >
+                {loading ? 'Bitte warten…' : 'Buchen'}
+              </button>
+            </div>
           </form>
         </motion.div>
       </motion.div>

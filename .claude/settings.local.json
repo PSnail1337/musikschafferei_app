@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/c/Users/pstro/Desktop/musicmaker.studio/**)",
+      "Bash(xargs grep \"^import.*from\")"
+    ]
+  }
+}

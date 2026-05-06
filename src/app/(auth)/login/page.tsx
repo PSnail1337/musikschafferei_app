@@ -20,8 +20,19 @@ export default function LoginPage() {
     try {
       await signInWithEmail(email, password);
       router.replace('/booking');
-    } catch {
-      setError('E-Mail oder Passwort ist falsch.');
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? '';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+        setError('E-Mail oder Passwort ist falsch.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('E-Mail/Passwort-Anmeldung ist in Firebase nicht aktiviert.');
+      } else if (code === 'auth/network-request-failed') {
+        setError('Netzwerkfehler – bitte Internetverbindung prüfen.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Zu viele Versuche – bitte kurz warten.');
+      } else {
+        setError(`Fehler: ${code || 'Unbekannt'}`);
+      }
     } finally {
       setLoading(false);
     }

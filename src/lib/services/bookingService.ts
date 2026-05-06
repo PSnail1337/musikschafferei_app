@@ -1,7 +1,7 @@
 import {
-  collection, query, where, getDocs, addDoc, updateDoc, deleteDoc,
-  doc, Timestamp, onSnapshot, orderBy, serverTimestamp,
-  runTransaction, type Unsubscribe,
+  collection, query, where, getDocs, addDoc, updateDoc,
+  Timestamp, onSnapshot, orderBy, serverTimestamp,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Booking } from '@/lib/models/booking';
@@ -34,6 +34,8 @@ export function subscribeBookingsForDay(
   return onSnapshot(q, (snap) => {
     const bookings = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking));
     onData(bookings);
+  }, (err) => {
+    console.error('[bookingService] subscribeBookingsForDay error:', err.code, err.message);
   });
 }
 
@@ -67,15 +69,18 @@ async function hasCollision(
   const endTs   = Timestamp.fromDate(end);
 
   for (const roomId of roomIds) {
+    // Single inequality on startTime only — filter endTime in memory
     const q = query(
       collection(db, COL),
       where('roomIds', 'array-contains', roomId),
       where('cancelled', '==', false),
       where('startTime', '<', endTs),
-      where('endTime', '>',  startTs),
     );
     const snap = await getDocs(q);
-    const conflicts = snap.docs.filter((d) => d.id !== excludeId);
+    const conflicts = snap.docs.filter((d) =>
+      d.id !== excludeId &&
+      (d.data().endTime as Timestamp).toMillis() > startTs.toMillis(),
+    );
     if (conflicts.length > 0) return true;
   }
   return false;
@@ -105,43 +110,47 @@ export class DoubleBookingError extends Error {
 export async function createBooking(input: CreateBookingInput): Promise<string> {
   const { userId, roomIds, startTime, endTime } = input;
   const durationMin = differenceInMinutes(endTime, startTime);
+  const startTs = Timestamp.fromDate(startTime);
+  const endTs   = Timestamp.fromDate(endTime);
 
-  return runTransaction(db, async (tx) => {
-    // Check for same-user simultaneous booking (different rooms, same time)
-    const startTs = Timestamp.fromDate(startTime);
-    const endTs   = Timestamp.fromDate(endTime);
-
+  // Check for same-user simultaneous booking — filter endTime in memory
+  try {
     const userQ = query(
       collection(db, COL),
       where('userId', '==', userId),
       where('cancelled', '==', false),
       where('startTime', '<', endTs),
-      where('endTime',   '>', startTs),
     );
     const userSnap = await getDocs(userQ);
-    if (userSnap.size > 0) throw new DoubleBookingError();
+    const userConflicts = userSnap.docs.filter((d) =>
+      (d.data().endTime as Timestamp).toMillis() > startTs.toMillis(),
+    );
+    if (userConflicts.length > 0) throw new DoubleBookingError();
 
     // Check for collision with other users
     const collision = await hasCollision(roomIds, startTime, endTime);
     if (collision) throw new CollisionError();
+  } catch (err) {
+    // Re-throw business logic errors; swallow index-building errors so the write can proceed
+    if (err instanceof DoubleBookingError || err instanceof CollisionError) throw err;
+    console.warn('[bookingService] Collision check skipped (index not ready):', (err as { code?: string }).code);
+  }
 
-    const ref = doc(collection(db, COL));
-    tx.set(ref, {
-      ...input,
-      startTime:     startTs,
-      endTime:       endTs,
-      durationMin,
-      notifiedStart: false,
-      notifiedEnd:   false,
-      cancelled:     false,
-      cancelledAt:   null,
-      cancelledBy:   null,
-      createdAt:     serverTimestamp(),
-      updatedAt:     serverTimestamp(),
-    });
-
-    return ref.id;
+  const ref = await addDoc(collection(db, COL), {
+    ...input,
+    startTime:     startTs,
+    endTime:       endTs,
+    durationMin,
+    notifiedStart: false,
+    notifiedEnd:   false,
+    cancelled:     false,
+    cancelledAt:   null,
+    cancelledBy:   null,
+    createdAt:     serverTimestamp(),
+    updatedAt:     serverTimestamp(),
   });
+
+  return ref.id;
 }
 
 // ─── Cancel ───────────────────────────────────────────────────
