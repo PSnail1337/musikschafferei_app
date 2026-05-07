@@ -39,9 +39,14 @@ export default function InventoryPage() {
       debounceRef.current = setTimeout(async () => {
         if (!profile) return;
         setLoading(true);
-        const results = await searchInventory(query, profile.uid, profile.displayName);
-        setItems(results);
-        setLoading(false);
+        try {
+          const results = await searchInventory(query, profile.uid, profile.displayName);
+          setItems(results);
+        } catch (err) {
+          console.error('[Inventory] search failed:', err);
+        } finally {
+          setLoading(false);
+        }
       }, 400);
     } else {
       loadAll();
@@ -52,9 +57,20 @@ export default function InventoryPage() {
 
   async function loadAll() {
     setLoading(true);
-    const { items: all } = await listInventory(50);
-    setItems(all);
-    setLoading(false);
+    try {
+      const { items: all } = await listInventory(50);
+      setItems(all);
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? '';
+      if (code === 'failed-precondition') {
+        // Index still building — show empty state, retry in 10s
+        setTimeout(loadAll, 10000);
+      } else {
+        console.error('[Inventory] loadAll failed:', err);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

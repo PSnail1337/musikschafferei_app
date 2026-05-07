@@ -11,6 +11,7 @@ import type { Booking } from '@/lib/models/booking';
 import { CalendarLandscape } from '@/components/booking/CalendarLandscape';
 import { CalendarPortrait } from '@/components/booking/CalendarPortrait';
 import { BookingCreateSheet } from '@/components/booking/BookingCreateSheet';
+import { BookingDetailSheet } from '@/components/booking/BookingDetailSheet';
 import { cn } from '@/lib/utils/cn';
 
 export default function BookingPage() {
@@ -19,6 +20,7 @@ export default function BookingPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLandscape, setIsLandscape] = useState(false);
   const [showCreate, setShowCreate]   = useState<{ roomId?: string; startTime?: Date } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // Detect orientation
   useEffect(() => {
@@ -81,12 +83,14 @@ export default function BookingPage() {
             bookings={bookings}
             canCombo={canCombo}
             onSlotClick={(roomId, startTime) => setShowCreate({ roomId, startTime })}
+            onBookingClick={setSelectedBooking}
           />
         ) : (
           <CalendarPortrait
             date={date}
             bookings={bookings}
             onSlotClick={(roomId, startTime) => setShowCreate({ roomId, startTime })}
+            onBookingClick={setSelectedBooking}
           />
         )}
       </div>
@@ -107,6 +111,13 @@ export default function BookingPage() {
           defaultStartTime={showCreate.startTime}
           canCombo={canCombo}
           onClose={() => setShowCreate(null)}
+        />
+      )}
+
+      {selectedBooking && (
+        <BookingDetailSheet
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
         />
       )}
     </div>

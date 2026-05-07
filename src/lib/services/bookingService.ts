@@ -1,5 +1,5 @@
 import {
-  collection, query, where, getDocs, addDoc, updateDoc,
+  collection, query, where, getDocs, addDoc, updateDoc, doc,
   Timestamp, onSnapshot, orderBy, serverTimestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -136,6 +136,7 @@ export async function createBooking(input: CreateBookingInput): Promise<string> 
     console.warn('[bookingService] Collision check skipped (index not ready):', (err as { code?: string }).code);
   }
 
+  console.log('[bookingService] writing booking to Firestore...');
   const ref = await addDoc(collection(db, COL), {
     ...input,
     startTime:     startTs,

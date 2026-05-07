@@ -54,8 +54,10 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
       });
       toast.success('Artikel hinzugefügt!');
       onCreated();
-    } catch {
-      toast.error('Fehler beim Speichern.');
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? 'unknown';
+      console.error('[Inventory] createInventoryItem failed:', code, err);
+      toast.error(`Fehler: ${code}`, { duration: 6000 });
     } finally {
       setLoading(false);
     }
@@ -64,7 +66,7 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end justify-center"
+        className="fixed inset-0 z-[60] flex items-end justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -85,7 +87,8 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
             <button onClick={onClose} className="btn-ghost p-2"><X className="w-5 h-5" /></button>
           </div>
 
-          <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto max-h-[70vh]">
+          <form onSubmit={handleSubmit}>
+          <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[55vh]">
             {/* Photo upload */}
             <div>
               <label className="block text-sm font-semibold text-text-primary mb-2">
@@ -145,9 +148,12 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
               ))}
             </div>
 
+          </div>
+          <div className="px-5 py-4 border-t border-border">
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? 'Speichern…' : 'Artikel speichern'}
             </button>
+          </div>
           </form>
         </motion.div>
       </motion.div>

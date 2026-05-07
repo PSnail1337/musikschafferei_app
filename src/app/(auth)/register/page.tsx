@@ -31,11 +31,18 @@ export default function RegisterPage() {
       await signUpWithEmail(email, password, name);
       router.replace('/booking');
     } catch (err: unknown) {
-      const msg = (err as { code?: string }).code;
-      if (msg === 'auth/email-already-in-use') {
+      const code = (err as { code?: string }).code ?? '';
+      console.error('[Register] signUpWithEmail failed:', code, err);
+      if (code === 'auth/email-already-in-use') {
         setError('Diese E-Mail ist bereits vergeben.');
+      } else if (code === 'auth/weak-password') {
+        setError('Passwort muss mindestens 6 Zeichen haben.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('Registrierung ist derzeit deaktiviert.');
+      } else if (code === 'permission-denied') {
+        setError('Zugriff verweigert – bitte kontaktiere den Admin.');
       } else {
-        setError('Registrierung fehlgeschlagen. Bitte versuche es erneut.');
+        setError(`Registrierung fehlgeschlagen (${code || 'unbekannt'}).`);
       }
     } finally {
       setLoading(false);

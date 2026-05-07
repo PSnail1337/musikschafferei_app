@@ -66,6 +66,14 @@
         { "fieldPath": "masterId",     "order": "ASCENDING" },
         { "fieldPath": "displayName",  "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "lager_artikel",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active",     "order": "ASCENDING" },
+        { "fieldPath": "refNumber",  "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -79,7 +79,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end justify-center"
+        className="fixed inset-0 z-[60] flex items-end justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -100,7 +100,8 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
             <button onClick={onClose} className="btn-ghost p-2"><X className="w-5 h-5" /></button>
           </div>
 
-          <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          <form onSubmit={handleSubmit}>
+          <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[55vh]">
             {/* Type selector */}
             <div className="grid grid-cols-2 gap-2">
               {(['feedback', 'reklamation'] as TicketType[]).map((t) => (
@@ -165,9 +166,12 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
               </div>
             </div>
 
+          </div>
+          <div className="px-5 py-4 border-t border-border">
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? 'Senden…' : 'Ticket senden'}
             </button>
+          </div>
           </form>
         </motion.div>
       </motion.div>

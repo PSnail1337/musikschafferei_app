@@ -149,17 +149,28 @@ export async function listInventory(
   pageSize = 20,
   lastDoc?: QueryDocumentSnapshot,
 ): Promise<{ items: InventoryItem[]; lastDoc: QueryDocumentSnapshot | null }> {
-  let q = query(
-    collection(db, COL),
-    where('active', '==', true),
-    orderBy('refNumber', 'asc'),
-    limit(pageSize),
-  );
-  if (lastDoc) q = query(q, startAfter(lastDoc));
-
-  const snap = await getDocs(q);
-  const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as InventoryItem));
-  return { items, lastDoc: snap.docs[snap.docs.length - 1] ?? null };
+  try {
+    let q = query(
+      collection(db, COL),
+      where('active', '==', true),
+      orderBy('refNumber', 'asc'),
+      limit(pageSize),
+    );
+    if (lastDoc) q = query(q, startAfter(lastDoc));
+    const snap = await getDocs(q);
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as InventoryItem));
+    return { items, lastDoc: snap.docs[snap.docs.length - 1] ?? null };
+  } catch (err) {
+    // Index still building — fallback to unordered fetch
+    if ((err as { code?: string }).code === 'failed-precondition') {
+      const snap = await getDocs(query(collection(db, COL), where('active', '==', true)));
+      const items = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as InventoryItem))
+        .sort((a, b) => a.refNumber.localeCompare(b.refNumber));
+      return { items, lastDoc: null };
+    }
+    throw err;
+  }
 }
 
 // ─── Change log ───────────────────────────────────────────────

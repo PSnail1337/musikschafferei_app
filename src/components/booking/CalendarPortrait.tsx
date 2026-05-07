@@ -9,9 +9,10 @@ import type { Booking } from '@/lib/models/booking';
 import { cn } from '@/lib/utils/cn';
 
 interface Props {
-  date:        Date;
-  bookings:    Booking[];
-  onSlotClick: (roomId: string, startTime: Date) => void;
+  date:           Date;
+  bookings:       Booking[];
+  onSlotClick:    (roomId: string, startTime: Date) => void;
+  onBookingClick: (booking: Booking) => void;
 }
 
 const START_HOUR   = 6;
@@ -19,7 +20,7 @@ const END_HOUR     = 24;
 const HOUR_PX      = 64;
 const TOTAL_HOURS  = END_HOUR - START_HOUR;
 
-export function CalendarPortrait({ date, bookings, onSlotClick }: Props) {
+export function CalendarPortrait({ date, bookings, onSlotClick, onBookingClick }: Props) {
   const [roomIdx, setRoomIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -161,7 +162,7 @@ export function CalendarPortrait({ date, bookings, onSlotClick }: Props) {
                     backgroundColor: room.color + 'dd',
                     color:           room.textColor,
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onBookingClick(booking); }}
                 >
                   <p className="text-[12px] font-bold truncate">{booking.userName}</p>
                   {height > 30 && (
