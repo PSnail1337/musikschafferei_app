@@ -2,23 +2,95 @@
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
   minInstances: 0
-  # maxInstances: 100
-  # concurrency: 80
-  # cpu: 1
-  # memoryMiB: 512
 
-# Environment variables and secrets.
-# env:
-  # Configure environment variables.
-  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
-  # - variable: MESSAGE
-  #   value: Hello world!
-  #   availability:
-  #     - BUILD
-  #     - RUNTIME
+env:
+  # ─── Public Firebase config (Build + Runtime) ─────────────────
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAT0ymhSatu7kh93C8H5HyD44l7uCewdC8"
+    availability:
+      - BUILD
+      - RUNTIME
 
-  # Grant access to secrets in Cloud Secret Manager.
-  # You can create secrets with the CLI command `firebase apphosting:secrets:set <secretName>`.
-  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
-  # - variable: MY_SECRET
-  #   secret: mySecretRef
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "musicmaker-97136.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "musicmaker-97136"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "musicmaker-97136.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "357120056594"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:357120056594:web:002d562ba1cbb43cf3a7cb"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-WDLG51L8DC"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
+    value: "BKA_TGgfeZl2d-B9DPSUEiin2A8Mn-uSPa9Fbrb1EWQwZp_tSuRQaIdaufURQ2ukgKBO39LngLbnYc9vAxPB4v0"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_APP_URL
+    value: "https://musicmaker.studio"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # ─── Server-side secrets (Runtime only) ───────────────────────
+  - variable: ADMIN_PRIVATE_KEY
+    secret: ADMIN_PRIVATE_KEY
+    availability:
+      - RUNTIME
+
+  - variable: ADMIN_PROJECT_ID
+    secret: ADMIN_PROJECT_ID
+    availability:
+      - RUNTIME
+
+  - variable: ADMIN_CLIENT_EMAIL
+    secret: ADMIN_CLIENT_EMAIL
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_HOST
+    secret: SMTP_HOST
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_PORT
+    secret: SMTP_PORT
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_USER
+    secret: SMTP_USER
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_FROM
+    secret: SMTP_FROM
+    availability:
+      - RUNTIME

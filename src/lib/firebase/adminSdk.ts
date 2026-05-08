@@ -13,9 +13,9 @@ function getAdminApp(): App {
     return _app;
   }
 
-  const projectId   = process.env.FIREBASE_ADMIN_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey  = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+  const projectId   = process.env.ADMIN_PROJECT_ID;
+  const clientEmail = process.env.ADMIN_CLIENT_EMAIL;
+  const privateKey  = process.env.ADMIN_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
