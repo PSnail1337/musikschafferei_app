@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { adminMsg, adminDb } from '@/lib/firebase/adminSdk';
 import type { NotificationPayload } from '@/lib/services/notificationService';

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 
 const DEEPL_URL = 'https://api-free.deepl.com/v2/translate';

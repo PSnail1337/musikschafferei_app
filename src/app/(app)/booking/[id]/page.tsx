@@ -73,7 +73,7 @@ export default function BookingDetailPage() {
     );
   }
 
-  const rooms = ROOMS.filter((r) => booking.roomIds.includes(r.id));
+const rooms = ROOMS.filter((r) => (booking.roomIds as string[]).includes(r.id));
 
   return (
     <div className="max-w-xl mx-auto px-4 py-4 space-y-4">

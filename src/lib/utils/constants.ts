@@ -18,7 +18,7 @@ export const DEFAULT_CANCELLATION_HOURS = 24;
 
 // ─── Rooms ────────────────────────────────────────────────────
 export const ROOMS: readonly {
-  id:        string;
+  id:        RoomId;
   name:      string;
   area:      number;
   color:     string;
