@@ -1,6 +1,7 @@
 {
   "projects": {
-    "musicmaker": "musicmaker-97136"
+    "musicmaker": "musicmaker-97136",
+    "default": "musicmaker-97136"
   },
   "targets": {},
   "etags": {}

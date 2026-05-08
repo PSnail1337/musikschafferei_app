@@ -42,3 +42,8 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# AI agent files
+.agents/
+.claude/
+skills-lock.json
