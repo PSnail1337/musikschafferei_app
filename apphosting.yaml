@@ -61,7 +61,7 @@ env:
 
   # ─── Server-side secrets (Runtime only) ───────────────────────
   - variable: ADMIN_PRIVATE_KEY
-    secret: ADMIN_PRIVATE_KEY
+    secret: FIREBASE_ADMIN_PRIVATE_KEY 
     availability:
       - RUNTIME
 
