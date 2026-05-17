@@ -97,7 +97,6 @@ export async function updateInventoryItem(
 }
 
 export async function softDeleteItem(id: string, deletedBy: string, deletedByName: string) {
-  const snap = await getDoc(doc(db, COL, id));
   await updateInventoryItem(
     id,
     { active: false } as Partial<InventoryItem>,
@@ -105,6 +104,48 @@ export async function softDeleteItem(id: string, deletedBy: string, deletedByNam
     deletedByName,
     { active: true } as Partial<InventoryItem>,
   );
+}
+
+export async function lendItem(
+  id: string,
+  userId: string,
+  displayName: string,
+): Promise<void> {
+  await updateDoc(doc(db, COL, id), {
+    lentTo: { userId, displayName, lentAt: serverTimestamp() },
+    updatedBy: userId,
+    updatedAt: serverTimestamp(),
+  });
+  await addDoc(collection(db, LOG_COL), {
+    articleId: id,
+    userId,
+    userName:  displayName,
+    field:     'lentTo',
+    before:    null,
+    after:     displayName,
+    changedAt: serverTimestamp(),
+  });
+}
+
+export async function returnItem(
+  id: string,
+  userId: string,
+  displayName: string,
+): Promise<void> {
+  await updateDoc(doc(db, COL, id), {
+    lentTo:    null,
+    updatedBy: userId,
+    updatedAt: serverTimestamp(),
+  });
+  await addDoc(collection(db, LOG_COL), {
+    articleId: id,
+    userId,
+    userName:  displayName,
+    field:     'lentTo',
+    before:    displayName,
+    after:     null,
+    changedAt: serverTimestamp(),
+  });
 }
 
 // ─── Search ───────────────────────────────────────────────────

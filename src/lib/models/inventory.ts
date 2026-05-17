@@ -1,5 +1,11 @@
 import type { Timestamp } from 'firebase/firestore';
 
+export interface LentInfo {
+  userId:      string;
+  displayName: string;
+  lentAt:      Timestamp;
+}
+
 export interface InventoryItem {
   id:          string;
   refNumber:   string;  // ART-00001
@@ -8,6 +14,7 @@ export interface InventoryItem {
   quantity:    number;
   photoURL:    string | null;
   location:    InventoryLocation;
+  lentTo:      LentInfo | null;
   createdBy:   string;
   updatedBy:   string;
   createdAt:   Timestamp;

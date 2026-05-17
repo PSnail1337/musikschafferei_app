@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Package, Edit2, Clock, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Clock, User, ChevronDown, ChevronUp, ArrowDownToLine, Undo2 } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { getChangeLogs } from '@/lib/services/inventoryService';
+import { getChangeLogs, lendItem, returnItem } from '@/lib/services/inventoryService';
 import { useAuthStore } from '@/store/authStore';
 import { isAdmin, isMainMaster } from '@/lib/utils/roleUtils';
 import type { InventoryItem, InventoryChangeLog } from '@/lib/models/inventory';
@@ -19,13 +19,19 @@ export default function InventoryItemPage() {
   const router   = useRouter();
   const profile  = useAuthStore((s) => s.profile);
 
-  const [item, setItem]         = useState<InventoryItem | null>(null);
-  const [logs, setLogs]         = useState<InventoryChangeLog[]>([]);
-  const [showLogs, setShowLogs] = useState(false);
-  const [loading, setLoading]   = useState(true);
+  const [item, setItem]           = useState<InventoryItem | null>(null);
+  const [logs, setLogs]           = useState<InventoryChangeLog[]>([]);
+  const [showLogs, setShowLogs]   = useState(false);
+  const [loading, setLoading]     = useState(true);
+  const [lendLoading, setLendLoading] = useState(false);
 
   const canEdit    = profile ? isAdmin(profile.role) : false;
   const canSeeLogs = profile ? isMainMaster(profile.role) : false;
+
+  const isLent        = !!item?.lentTo;
+  const lentByMe      = item?.lentTo?.userId === profile?.uid;
+  const canReturn     = lentByMe || (profile ? isAdmin(profile.role) : false);
+  const displayName   = profile?.displayName ?? profile?.email ?? 'Unbekannt';
 
   useEffect(() => {
     async function load() {
@@ -40,6 +46,30 @@ export default function InventoryItemPage() {
     const data = await getChangeLogs(id);
     setLogs(data);
     setShowLogs(true);
+  }
+
+  async function handleLend() {
+    if (!profile?.uid) return;
+    setLendLoading(true);
+    try {
+      await lendItem(id, profile.uid, displayName);
+      const snap = await getDoc(doc(db, 'lager_artikel', id));
+      if (snap.exists()) setItem({ id: snap.id, ...snap.data() } as InventoryItem);
+    } finally {
+      setLendLoading(false);
+    }
+  }
+
+  async function handleReturn() {
+    if (!profile?.uid) return;
+    setLendLoading(true);
+    try {
+      await returnItem(id, profile.uid, displayName);
+      const snap = await getDoc(doc(db, 'lager_artikel', id));
+      if (snap.exists()) setItem({ id: snap.id, ...snap.data() } as InventoryItem);
+    } finally {
+      setLendLoading(false);
+    }
   }
 
   if (loading) {
@@ -87,6 +117,47 @@ export default function InventoryItemPage() {
           )}>
             × {item.quantity}
           </span>
+        </div>
+
+        {/* Lending status + action */}
+        <div className="flex items-center justify-between gap-3 py-1">
+          {isLent ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="badge bg-warning/15 text-warning text-xs px-2.5 py-1 flex-shrink-0">
+                ausgeliehen
+              </span>
+              <span className="text-sm text-text-secondary truncate">
+                bei <span className="font-medium text-text-primary">{item.lentTo!.displayName}</span>
+                {item.lentTo!.lentAt && (
+                  <> · {format(item.lentTo!.lentAt.toDate(), 'd. MMM', { locale: de })}</>
+                )}
+              </span>
+            </div>
+          ) : (
+            <span className="badge bg-success/10 text-success text-xs px-2.5 py-1">
+              verfügbar
+            </span>
+          )}
+
+          {isLent && canReturn ? (
+            <button
+              onClick={handleReturn}
+              disabled={lendLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-surface-3 text-sm font-medium text-text-primary hover:bg-surface-3/80 transition-colors disabled:opacity-50 flex-shrink-0"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+              Zurückgeben
+            </button>
+          ) : !isLent ? (
+            <button
+              onClick={handleLend}
+              disabled={lendLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-brand-500 text-sm font-semibold text-white hover:bg-brand-600 transition-colors disabled:opacity-50 flex-shrink-0"
+            >
+              <ArrowDownToLine className="w-3.5 h-3.5" />
+              Ausleihen
+            </button>
+          ) : null}
         </div>
 
         {item.description && (

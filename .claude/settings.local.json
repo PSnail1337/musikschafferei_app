@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Read(//mnt/c/Users/pstro/Desktop/musicmaker.studio/**)",
-      "Bash(xargs grep \"^import.*from\")"
+      "Bash(xargs grep \"^import.*from\")",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\pstro\\\\Desktop\\\\musicmaker.studio\\\\musikschafferei_app\\\\src\" -Recurse -Directory | Where-Object { $_.Name -match '\\(lager|inventory\\)' } | Select-Object -ExpandProperty FullName)",
+      "Bash(xargs grep -l \"lager_artikel\\\\|lager_log\\\\|lager_dropdowns\")"
     ]
   }
 }

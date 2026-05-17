@@ -40,7 +40,7 @@ export function InventoryCard({ item, canEdit, onRefresh }: Props) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
+        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
           <span className="text-[10px] font-mono text-text-tertiary">{item.refNumber}</span>
           <span
             className={cn(
@@ -52,13 +52,24 @@ export function InventoryCard({ item, canEdit, onRefresh }: Props) {
           >
             Menge: {item.quantity}
           </span>
+          {item.lentTo && (
+            <span className="badge text-[9px] bg-warning/10 text-warning">
+              ausgeliehen
+            </span>
+          )}
         </div>
         <p className="text-sm font-semibold text-text-primary truncate">{item.name}</p>
-        <p className="text-xs text-text-tertiary truncate mt-0.5">
-          {[item.location.room, item.location.storage, item.location.shelf]
-            .filter(Boolean)
-            .join(' · ')}
-        </p>
+        {item.lentTo ? (
+          <p className="text-xs text-warning truncate mt-0.5">
+            bei {item.lentTo.displayName}
+          </p>
+        ) : (
+          <p className="text-xs text-text-tertiary truncate mt-0.5">
+            {[item.location.room, item.location.storage, item.location.shelf]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        )}
       </div>
 
       <ChevronRight className="w-4 h-4 text-text-tertiary flex-shrink-0" />
