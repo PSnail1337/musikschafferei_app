@@ -1,22 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
-import { Package, Clock, User, ChevronDown, ChevronUp, ArrowDownToLine, Undo2 } from 'lucide-react';
+import { Package, Clock, User, ChevronDown, ChevronUp, ArrowDownToLine, Undo2, Pencil, Check, X } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { getChangeLogs, lendItem, returnItem } from '@/lib/services/inventoryService';
+import { getChangeLogs, lendItem, returnItem, updateInventoryItem, getDropdowns } from '@/lib/services/inventoryService';
 import { useAuthStore } from '@/store/authStore';
 import { isAdmin, isMainMaster } from '@/lib/utils/roleUtils';
 import type { InventoryItem, InventoryChangeLog } from '@/lib/models/inventory';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils/cn';
+import toast from 'react-hot-toast';
 
 export default function InventoryItemPage() {
   const { id }   = useParams<{ id: string }>();
-  const router   = useRouter();
   const profile  = useAuthStore((s) => s.profile);
 
   const [item, setItem]           = useState<InventoryItem | null>(null);
@@ -24,6 +24,12 @@ export default function InventoryItemPage() {
   const [showLogs, setShowLogs]   = useState(false);
   const [loading, setLoading]     = useState(true);
   const [lendLoading, setLendLoading] = useState(false);
+
+  // Location editing
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [locationDraft, setLocationDraft] = useState({ room: '', storage: '', shelf: '' });
+  const [dropdowns, setDropdowns] = useState<Record<string, string[]>>({});
+  const [savingLocation, setSavingLocation] = useState(false);
 
   const canEdit    = profile ? isAdmin(profile.role) : false;
   const canSeeLogs = profile ? isMainMaster(profile.role) : false;
@@ -46,6 +52,52 @@ export default function InventoryItemPage() {
     const data = await getChangeLogs(id);
     setLogs(data);
     setShowLogs(true);
+  }
+
+  async function handleStartEditLocation() {
+    if (!item) return;
+    if (!Object.keys(dropdowns).length) {
+      const dd = await getDropdowns();
+      setDropdowns(dd);
+    }
+    setLocationDraft({
+      room:    item.location.room,
+      storage: item.location.storage,
+      shelf:   item.location.shelf,
+    });
+    setEditingLocation(true);
+  }
+
+  function handleCancelEditLocation() {
+    setEditingLocation(false);
+  }
+
+  async function handleSaveLocation() {
+    if (!item || !profile) return;
+    const unchanged =
+      locationDraft.room    === item.location.room &&
+      locationDraft.storage === item.location.storage &&
+      locationDraft.shelf   === item.location.shelf;
+    if (unchanged) { setEditingLocation(false); return; }
+
+    setSavingLocation(true);
+    try {
+      await updateInventoryItem(
+        id,
+        { location: locationDraft },
+        profile.uid,
+        displayName,
+        { location: item.location },
+      );
+      const snap = await getDoc(doc(db, 'lager_artikel', id));
+      if (snap.exists()) setItem({ id: snap.id, ...snap.data() } as InventoryItem);
+      setEditingLocation(false);
+      toast.success('Standort aktualisiert.');
+    } catch {
+      toast.error('Speichern fehlgeschlagen.');
+    } finally {
+      setSavingLocation(false);
+    }
   }
 
   async function handleLend() {
@@ -88,6 +140,12 @@ export default function InventoryItemPage() {
       </div>
     );
   }
+
+  const locationFields = [
+    { key: 'rooms',   label: 'Raum',     field: 'room'    as const },
+    { key: 'storage', label: 'Lagerort', field: 'storage' as const },
+    { key: 'shelves', label: 'Regal',    field: 'shelf'   as const },
+  ];
 
   return (
     <div className="max-w-xl mx-auto px-4 py-4 space-y-4">
@@ -164,17 +222,64 @@ export default function InventoryItemPage() {
           <p className="text-sm text-text-secondary">{item.description}</p>
         )}
 
-        <div className="grid grid-cols-3 gap-2 pt-2">
-          {[
-            { label: 'Raum', value: item.location.room },
-            { label: 'Lagerort', value: item.location.storage },
-            { label: 'Regal', value: item.location.shelf },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-surface-2 rounded-[10px] p-2.5">
-              <p className="text-[10px] text-text-tertiary">{label}</p>
-              <p className="text-sm font-medium text-text-primary mt-0.5">{value || '–'}</p>
-            </div>
-          ))}
+        {/* Location section */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-text-tertiary">Standort</p>
+            {canEdit && !editingLocation && (
+              <button
+                onClick={handleStartEditLocation}
+                className="flex items-center gap-1 text-xs text-brand-500 hover:text-brand-600 transition-colors"
+              >
+                <Pencil className="w-3 h-3" />
+                Bearbeiten
+              </button>
+            )}
+            {canEdit && editingLocation && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCancelEditLocation}
+                  disabled={savingLocation}
+                  className="flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
+                >
+                  <X className="w-3 h-3" />
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleSaveLocation}
+                  disabled={savingLocation}
+                  className="flex items-center gap-1 text-xs text-brand-500 hover:text-brand-600 font-medium transition-colors disabled:opacity-50"
+                >
+                  <Check className="w-3 h-3" />
+                  {savingLocation ? 'Speichern…' : 'Speichern'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {locationFields.map(({ key, label, field }) => (
+              <div key={key} className="bg-surface-2 rounded-[10px] p-2.5">
+                <p className="text-[10px] text-text-tertiary">{label}</p>
+                {editingLocation ? (
+                  <select
+                    className="w-full mt-1 text-sm font-medium bg-transparent text-text-primary focus:outline-none"
+                    value={locationDraft[field]}
+                    onChange={(e) => setLocationDraft((prev) => ({ ...prev, [field]: e.target.value }))}
+                  >
+                    <option value="">–</option>
+                    {(dropdowns[key] ?? []).map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm font-medium text-text-primary mt-0.5">
+                    {item.location[field] || '–'}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-text-tertiary pt-1">

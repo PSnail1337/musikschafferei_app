@@ -19,10 +19,10 @@ service firebase.storage {
       allow write: if isSignedIn();
     }
 
-    // Terms PDFs — readable by all users, writable only via server (API route)
+    // Terms PDFs — readable by all users, writable by authenticated users (role gated in app code)
     match /terms/{filename} {
       allow read:  if isSignedIn();
-      allow write: if false;  // uploaded via Admin SDK in API route only
+      allow write: if isSignedIn();
     }
   }
 }

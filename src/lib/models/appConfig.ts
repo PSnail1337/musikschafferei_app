@@ -8,6 +8,8 @@ export interface AppConfig {
   registrationOpen: boolean;
   /** Maintenance mode message shown to all users */
   maintenanceMessage: string | null;
+  /** When maintenance ends (null = no end time set) */
+  maintenanceUntil: Timestamp | null;
   updatedBy: string;
   updatedAt: Timestamp;
 }

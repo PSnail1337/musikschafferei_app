@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuthStore } from '@/store/authStore';
 import { isMainMaster } from '@/lib/utils/roleUtils';
@@ -17,6 +17,7 @@ const DEFAULTS: Omit<AppConfig, 'updatedBy' | 'updatedAt'> = {
   registrationOpen:         true,
   defaultCancellationHours: 24,
   maintenanceMessage:       null,
+  maintenanceUntil:         null,
 };
 
 export default function AppSettingsPage() {
@@ -29,8 +30,8 @@ export default function AppSettingsPage() {
 
   const [registrationOpen, setRegistrationOpen]         = useState(DEFAULTS.registrationOpen);
   const [cancellationHours, setCancellationHours]       = useState(DEFAULTS.defaultCancellationHours);
-  const [maintenanceMessage, setMaintenanceMessage]     = useState('');
   const [maintenanceEnabled, setMaintenanceEnabled]     = useState(false);
+  const [maintenanceUntil, setMaintenanceUntil]         = useState('');
 
   useEffect(() => {
     if (profile && !isMainMaster(profile.role)) {
@@ -46,9 +47,14 @@ export default function AppSettingsPage() {
         const data = snap.data() as AppConfig;
         setRegistrationOpen(data.registrationOpen ?? true);
         setCancellationHours(data.defaultCancellationHours ?? 24);
-        const msg = data.maintenanceMessage ?? null;
-        setMaintenanceEnabled(!!msg);
-        setMaintenanceMessage(msg ?? '');
+        setMaintenanceEnabled(!!data.maintenanceMessage);
+        if (data.maintenanceUntil) {
+          const d = (data.maintenanceUntil as Timestamp).toDate();
+          const pad = (n: number) => String(n).padStart(2, '0');
+          setMaintenanceUntil(
+            `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+          );
+        }
       }
       setLoading(false);
     }).catch((err) => {
@@ -64,8 +70,9 @@ export default function AppSettingsPage() {
       await setDoc(CONFIG_DOC, {
         registrationOpen,
         defaultCancellationHours: cancellationHours,
-        maintenanceMessage: maintenanceEnabled && maintenanceMessage.trim()
-          ? maintenanceMessage.trim()
+        maintenanceMessage: maintenanceEnabled ? 'active' : null,
+        maintenanceUntil: maintenanceEnabled && maintenanceUntil
+          ? Timestamp.fromDate(new Date(maintenanceUntil))
           : null,
         updatedBy:  fbUser.uid,
         updatedAt:  serverTimestamp(),
@@ -184,13 +191,15 @@ export default function AppSettingsPage() {
             </div>
 
             {maintenanceEnabled && (
-              <textarea
-                className="input-base resize-none w-full"
-                rows={3}
-                value={maintenanceMessage}
-                onChange={(e) => setMaintenanceMessage(e.target.value)}
-                placeholder="z.B. Die App wird gerade gewartet. Bitte versuche es später erneut."
-              />
+              <div className="space-y-1">
+                <p className="text-xs text-text-secondary">Wieder online ab</p>
+                <input
+                  type="datetime-local"
+                  className="input-base w-full"
+                  value={maintenanceUntil}
+                  onChange={(e) => setMaintenanceUntil(e.target.value)}
+                />
+              </div>
             )}
           </div>
 
