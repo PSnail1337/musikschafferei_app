@@ -121,23 +121,22 @@ service cloud.firestore {
 
     // ─── ratings ─────────────────────────────────────────────
     match /ratings/{ratingId} {
-      // Only Masters can see ratings; raters see their own
-      allow read:  if isMaster();
-      allow create: if isMaster();
-      allow update: if isMaster() && isOwn(resource.data.ratedBy);
+      allow read:   if isMainMaster();
+      allow create: if isMainMaster();
+      allow update: if isMainMaster();
       allow delete: if false;
     }
 
     // ─── rating_gewichtung ────────────────────────────────────
     match /rating_gewichtung/{docId} {
-      allow read:  if isMaster();
+      allow read:  if isMainMaster();
       allow write: if isMainMaster();
     }
 
     // ─── rating_aggregate ─────────────────────────────────────
     match /rating_aggregate/{uid} {
-      allow read:  if isMaster();
-      allow write: if false;  // only written by Cloud Functions / server
+      allow read:  if isMainMaster();
+      allow write: if isMainMaster();
     }
 
     // ─── app_config ───────────────────────────────────────────

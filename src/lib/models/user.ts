@@ -5,6 +5,8 @@ export interface UserProfile {
   uid:                   string;
   email:                 string;
   displayName:           string;
+  /** Band or artist name — shown in calendar instead of personal name */
+  bandName:              string;
   photoURL:              string | null;
   role:                  UserRole;
   userType:              UserType;

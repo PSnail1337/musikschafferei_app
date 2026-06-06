@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithEmail, signInWithGoogle } from '@/lib/firebase/auth';
+import { signInWithEmail, signInWithGoogle, handleGoogleRedirectResult } from '@/lib/firebase/auth';
 import { cn } from '@/lib/utils/cn';
 
 export default function LoginPage() {
@@ -12,6 +12,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+
+  // Handle return from signInWithRedirect (popup-blocked fallback)
+  useEffect(() => {
+    handleGoogleRedirectResult()
+      .then((user) => { if (user) router.replace('/booking'); })
+      .catch(() => {}); // no redirect result — ignore
+  }, [router]);
 
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -37,15 +44,29 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
-
+ö
   async function handleGoogleLogin() {
     setError('');
     setLoading(true);
     try {
       await signInWithGoogle();
       router.replace('/booking');
-    } catch {
-      setError('Google-Anmeldung fehlgeschlagen.');
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? '';
+      console.error('[Google Login]', code, err);
+      if (code === 'auth/unauthorized-domain') {
+        setError('Diese Domain ist in Firebase nicht freigegeben. Bitte im Firebase-Konsole unter Authentication → Authorized domains eintragen.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('Google-Anmeldung ist in Firebase nicht aktiviert.');
+      } else if (code === 'auth/network-request-failed') {
+        setError('Netzwerkfehler – bitte Internetverbindung prüfen.');
+      } else if (code === 'auth/user-disabled') {
+        setError('Dieses Konto wurde deaktiviert.');
+      } else if (code === 'auth/popup-closed-by-user') {
+        setError('Anmeldung abgebrochen.');
+      } else {
+        setError(`Google-Anmeldung fehlgeschlagen (${code || 'unbekannt'}).`);
+      }
     } finally {
       setLoading(false);
     }

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils/cn';
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName]         = useState('');
+  const [bandName, setBandName] = useState('');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
@@ -28,7 +29,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await signUpWithEmail(email, password, name);
+      await signUpWithEmail(email, password, name, bandName);
       router.replace('/booking');
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? '';
@@ -75,6 +76,24 @@ export default function RegisterPage() {
                 required
                 autoComplete="name"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1.5">
+                Bandname / Künstlername
+              </label>
+              <input
+                type="text"
+                className="input-base"
+                placeholder="z.B. The Rockets oder Dein Künstlername"
+                value={bandName}
+                onChange={(e) => setBandName(e.target.value)}
+                required
+                autoComplete="organization"
+              />
+              <p className="text-xs text-text-tertiary mt-1">
+                Erscheint im Buchungskalender. Für mehrere Bands einfach ein zweites Konto anlegen.
+              </p>
             </div>
 
             <div>

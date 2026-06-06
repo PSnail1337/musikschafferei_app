@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Moon, Sun, Globe, Bell, BellOff, LogOut, User, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Moon, Sun, Globe, Bell, BellOff, LogOut, User, Shield, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import { logOut } from '@/lib/firebase/auth';
 import { useAuthStore } from '@/store/authStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -17,7 +19,29 @@ export default function SettingsPage() {
   const { theme, locale, notificationsOn, setTheme, setLocale, setNotifications }
     = useSettingsStore();
 
-  const [signingOut, setSigningOut] = useState(false);
+  const [signingOut, setSigningOut]   = useState(false);
+  const [bandName, setBandName]       = useState('');
+  const [savingBand, setSavingBand]   = useState(false);
+
+  useEffect(() => {
+    if (profile?.bandName !== undefined) setBandName(profile.bandName);
+  }, [profile?.bandName]);
+
+  async function handleSaveBandName() {
+    if (!profile) return;
+    setSavingBand(true);
+    try {
+      await updateDoc(doc(db, 'users', profile.uid), {
+        bandName: bandName.trim(),
+        updatedAt: serverTimestamp(),
+      });
+      toast.success('Bandname gespeichert.');
+    } catch {
+      toast.error('Speichern fehlgeschlagen.');
+    } finally {
+      setSavingBand(false);
+    }
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -109,21 +133,50 @@ export default function SettingsPage() {
     <div className="max-w-xl mx-auto px-4 py-4 space-y-5">
       {/* Profile card */}
       {profile && (
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-brand-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-            {profile.displayName[0]?.toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-text-primary truncate">{profile.displayName}</p>
-            <p className="text-sm text-text-secondary truncate">{profile.email}</p>
-            <div className="flex gap-1.5 mt-1.5">
-              <span className="badge bg-brand-500/10 text-brand-500 text-[10px]">
-                {ROLE_LABELS[profile.role]}
-              </span>
-              <span className="badge bg-surface-3 text-text-tertiary text-[10px]">
-                {TYPE_LABELS[profile.userType]}
-              </span>
+        <div className="card p-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-brand-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+              {profile.displayName[0]?.toUpperCase()}
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold text-text-primary truncate">{profile.displayName}</p>
+              <p className="text-sm text-text-secondary truncate">{profile.email}</p>
+              <div className="flex gap-1.5 mt-1.5">
+                <span className="badge bg-brand-500/10 text-brand-500 text-[10px]">
+                  {ROLE_LABELS[profile.role]}
+                </span>
+                <span className="badge bg-surface-3 text-text-tertiary text-[10px]">
+                  {TYPE_LABELS[profile.userType]}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Band name */}
+          <div className="border-t border-border pt-3 space-y-1.5">
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
+              Bandname / Künstlername
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="input-base flex-1 text-sm"
+                placeholder="z.B. The Rockets"
+                value={bandName}
+                onChange={(e) => setBandName(e.target.value)}
+              />
+              <button
+                onClick={handleSaveBandName}
+                disabled={savingBand}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-sm font-medium bg-brand-500 text-white hover:bg-brand-600 transition-colors disabled:opacity-50',
+                )}
+              >
+                <Check className="w-4 h-4" />
+                {savingBand ? '…' : 'OK'}
+              </button>
+            </div>
+            <p className="text-xs text-text-tertiary">Erscheint im Buchungskalender anstelle deines Namens.</p>
           </div>
         </div>
       )}

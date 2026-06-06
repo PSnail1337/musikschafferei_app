@@ -114,7 +114,9 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
                   ({(booking.durationMin / 60).toFixed(1)} h)
                 </span>
               </p>
-              <p className="text-xs text-text-tertiary pl-6">{booking.userName}</p>
+              <p className="text-xs text-text-tertiary pl-6">
+                {booking.bandName ? `${booking.bandName} · ${booking.userName}` : booking.userName}
+              </p>
             </div>
 
             {/* Notes */}

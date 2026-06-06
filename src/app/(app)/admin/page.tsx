@@ -46,7 +46,7 @@ export default function AdminPage() {
       label:   'Bewertungen',
       desc:    'Kriterienbewertung, gewichtete Übersicht',
       color:   '#F1C40F',
-      visible: true,
+      visible: isMain,
     },
     {
       href:    '/admin/export',

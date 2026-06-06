@@ -164,7 +164,7 @@ export function CalendarPortrait({ date, bookings, onSlotClick, onBookingClick }
                   }}
                   onClick={(e) => { e.stopPropagation(); onBookingClick(booking); }}
                 >
-                  <p className="text-[12px] font-bold truncate">{booking.userName}</p>
+                  <p className="text-[12px] font-bold truncate">{booking.bandName || booking.userName}</p>
                   {height > 30 && (
                     <p className="text-[10px] opacity-80">
                       {format(startDate, 'HH:mm')}–{format(endDate, 'HH:mm')}

@@ -2,6 +2,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
@@ -22,10 +24,11 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   displayName: string,
+  bandName: string,
 ) {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName });
-  await createUserProfile(credential.user, displayName);
+  await createUserProfile(credential.user, displayName, bandName);
   return credential.user;
 }
 
@@ -36,9 +39,28 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  const credential = await signInWithPopup(auth, googleProvider);
-  await ensureUserProfile(credential.user);
-  return credential.user;
+  try {
+    const credential = await signInWithPopup(auth, googleProvider);
+    await ensureUserProfile(credential.user);
+    return credential.user;
+  } catch (err) {
+    const code = (err as { code?: string }).code ?? '';
+    // Popup blocked (common on mobile/PWA) — fall back to redirect flow
+    if (code === 'auth/popup-blocked' || code === 'auth/popup-cancelled' || code === 'auth/cancelled-popup-request') {
+      await signInWithRedirect(auth, googleProvider);
+      return null; // page will redirect; caller won't reach this
+    }
+    throw err;
+  }
+}
+
+/** Call once on app mount to capture the result after a redirect sign-in */
+export async function handleGoogleRedirectResult() {
+  const result = await getRedirectResult(auth);
+  if (result?.user) {
+    await ensureUserProfile(result.user);
+  }
+  return result?.user ?? null;
 }
 
 export const logOut = () => signOut(auth);
@@ -48,7 +70,7 @@ export const resetPassword = (email: string) =>
 
 // ─── Profile bootstrapping ────────────────────────────────────
 
-async function createUserProfile(user: User, displayName: string) {
+async function createUserProfile(user: User, displayName: string, bandName = '') {
   const role: UserRole = MAIN_MASTER_EMAILS.includes(user.email ?? '')
     ? 'main-master'
     : 'mitglied';
@@ -58,6 +80,7 @@ async function createUserProfile(user: User, displayName: string) {
     uid:          user.uid,
     email:        user.email,
     displayName,
+    bandName,
     photoURL:     user.photoURL ?? null,
     role,
     userType:     'abo-kunde' as UserType,

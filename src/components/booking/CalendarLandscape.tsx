@@ -128,7 +128,7 @@ export function CalendarLandscape({ date, bookings, canCombo, onSlotClick, onBoo
                     }}
                     onClick={(e) => { e.stopPropagation(); onBookingClick(booking); }}
                   >
-                    <p className="text-[10px] font-bold truncate">{booking.userName}</p>
+                    <p className="text-[10px] font-bold truncate">{booking.bandName || booking.userName}</p>
                     <p className="text-[9px] opacity-80">
                       {format(startDate, 'HH:mm')}–{format(endDate, 'HH:mm')}
                     </p>

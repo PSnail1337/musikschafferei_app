@@ -92,6 +92,7 @@ export interface CreateBookingInput {
   userId:    string;
   userEmail: string;
   userName:  string;
+  bandName:  string;
   roomIds:   RoomId[];
   startTime: Date;
   endTime:   Date;

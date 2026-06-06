@@ -6,6 +6,8 @@ export interface Booking {
   userId:      string;
   userEmail:   string;
   userName:    string;
+  /** Band or artist name at time of booking */
+  bandName:    string;
   /** Array of room IDs — usually 1, or 2 for studio combo */
   roomIds:     RoomId[];
   startTime:   Timestamp;

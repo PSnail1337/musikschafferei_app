@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Package } from 'lucide-react';
 import { searchInventory, listInventory } from '@/lib/services/inventoryService';
 import { useAuthStore } from '@/store/authStore';
-import { isAdmin } from '@/lib/utils/roleUtils';
+import { isAdmin, isMainMaster } from '@/lib/utils/roleUtils';
 import { MSG_SCHUELER_RESTRICTED } from '@/lib/utils/constants';
 import type { InventoryItem } from '@/lib/models/inventory';
 import { InventoryCard } from '@/components/inventory/InventoryCard';
@@ -21,14 +21,16 @@ export default function InventoryPage() {
 
   const canAdd = profile ? isAdmin(profile.role) : false;
 
-  // Schüler restriction
-  if (profile?.userType === 'schüler') {
+  // Only main-master can access Lager for now
+  if (profile && !isMainMaster(profile.role)) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-surface-3 flex items-center justify-center">
           <Package className="w-8 h-8 text-text-tertiary" />
         </div>
-        <p className="text-sm text-text-secondary max-w-xs">{MSG_SCHUELER_RESTRICTED}</p>
+        <p className="text-sm text-text-secondary max-w-xs">
+          Die Lager-Funktion ist bald für dich da!
+        </p>
       </div>
     );
   }
