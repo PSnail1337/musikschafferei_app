@@ -44,7 +44,7 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
-ö
+
   async function handleGoogleLogin() {
     setError('');
     setLoading(true);
