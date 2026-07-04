@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithEmail, signInWithGoogle, handleGoogleRedirectResult } from '@/lib/firebase/auth';
+import { signInWithEmail, signInWithGoogle, handleGoogleRedirectResult, isInAppBrowser } from '@/lib/firebase/auth';
 import { cn } from '@/lib/utils/cn';
 
 export default function LoginPage() {
@@ -12,9 +12,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [inAppBrowser, setInAppBrowser] = useState(false);
 
-  // Handle return from signInWithRedirect (popup-blocked fallback)
   useEffect(() => {
+    setInAppBrowser(isInAppBrowser());
+    // Handle return from signInWithRedirect (popup-blocked fallback)
     handleGoogleRedirectResult()
       .then((user) => { if (user) router.replace('/booking'); })
       .catch(() => {}); // no redirect result — ignore
@@ -75,6 +77,24 @@ export default function LoginPage() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-4 bg-surface-2">
       <div className="w-full max-w-sm">
+        {/* In-app browser warning */}
+        {inAppBrowser && (
+          <div className="mb-4 rounded-xl bg-warning/10 border border-warning/30 p-4 text-sm text-text-primary">
+            <p className="font-semibold mb-1">Im Browser öffnen</p>
+            <p className="text-text-secondary mb-3">
+              Google-Anmeldung funktioniert hier nicht. Bitte öffne die Seite in Safari oder Chrome.
+            </p>
+            <a
+              href={typeof window !== 'undefined' ? window.location.href : '#'}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary inline-block text-center w-full"
+            >
+              In Safari öffnen
+            </a>
+          </div>
+        )}
+
         {/* Logo / brand */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-500 mb-4 shadow-card-md">
@@ -141,8 +161,8 @@ export default function LoginPage() {
 
           <button
             onClick={handleGoogleLogin}
-            disabled={loading}
-            className="btn-secondary w-full gap-3"
+            disabled={loading || inAppBrowser}
+            className={cn('btn-secondary w-full gap-3', inAppBrowser && 'opacity-40 cursor-not-allowed')}
           >
             <GoogleIcon />
             Mit Google anmelden

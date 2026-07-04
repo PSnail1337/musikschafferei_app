@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
@@ -12,7 +12,7 @@ import { CalendarLandscape } from '@/components/booking/CalendarLandscape';
 import { CalendarPortrait } from '@/components/booking/CalendarPortrait';
 import { BookingCreateSheet } from '@/components/booking/BookingCreateSheet';
 import { BookingDetailSheet } from '@/components/booking/BookingDetailSheet';
-import { cn } from '@/lib/utils/cn';
+import { DatePickerSheet } from '@/components/booking/DatePickerSheet';
 
 export default function BookingPage() {
   const profile    = useAuthStore((s) => s.profile);
@@ -21,6 +21,7 @@ export default function BookingPage() {
   const [isLandscape, setIsLandscape] = useState(false);
   const [showCreate, setShowCreate]   = useState<{ roomId?: string; startTime?: Date } | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showDatePicker, setShowDatePicker]   = useState(false);
 
   // Detect orientation
   useEffect(() => {
@@ -55,7 +56,12 @@ export default function BookingPage() {
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col items-center">
+        <button
+          type="button"
+          onClick={() => setShowDatePicker((v) => !v)}
+          className="flex flex-col items-center hover:opacity-70 active:opacity-50 transition-opacity"
+          aria-label="Datum auswählen"
+        >
           <span className="text-sm font-semibold text-text-primary">
             {format(date, 'EEEE, d. MMMM yyyy', { locale: de })}
           </span>
@@ -64,7 +70,7 @@ export default function BookingPage() {
               Heute
             </span>
           )}
-        </div>
+        </button>
 
         <button
           onClick={nextDay}
@@ -118,6 +124,14 @@ export default function BookingPage() {
         <BookingDetailSheet
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+        />
+      )}
+
+      {showDatePicker && (
+        <DatePickerSheet
+          selected={date}
+          onSelect={setDate}
+          onClose={() => setShowDatePicker(false)}
         />
       )}
     </div>

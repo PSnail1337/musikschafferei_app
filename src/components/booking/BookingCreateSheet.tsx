@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, addHours, setHours, setMinutes } from 'date-fns';
-import { X, Clock, Info } from 'lucide-react';
+import { format, addHours, addWeeks, addMonths } from 'date-fns';
+import { X, Clock, Info, Repeat } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   createBooking, CollisionError, DoubleBookingError,
@@ -12,6 +12,8 @@ import { useAuthStore } from '@/store/authStore';
 import { ROOMS, STUDIO_COMBO_ROOMS, DEFAULT_BOOKING_HOURS, MIN_BOOKING_HOURS } from '@/lib/utils/constants';
 import type { RoomId } from '@/lib/utils/constants';
 import { cn } from '@/lib/utils/cn';
+
+type RecurrenceFreq = 'weekly' | 'biweekly' | 'monthly';
 
 interface Props {
   defaultRoomId?:    string;
@@ -24,9 +26,12 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
   const profile = useAuthStore((s) => s.profile);
   const fbUser  = useAuthStore((s) => s.firebaseUser);
 
-  const now = new Date();
-  const defaultStart = defaultStartTime ?? setMinutes(setHours(new Date(), now.getHours() + 1), 0);
-  const defaultEnd   = addHours(defaultStart, DEFAULT_BOOKING_HOURS);
+  const defaultStart = defaultStartTime ?? (() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 1, 0, 0, 0); // strip seconds + ms so duration calc is exact
+    return d;
+  })();
+  const defaultEnd = addHours(defaultStart, DEFAULT_BOOKING_HOURS);
 
   const [selectedRooms, setSelectedRooms] = useState<RoomId[]>(
     defaultRoomId ? [defaultRoomId as RoomId] : [ROOMS[0].id],
@@ -37,7 +42,10 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
   const [loading, setLoading]     = useState(false);
   const [isCombo, setIsCombo]     = useState(false);
 
-  // Combo mode: select Heros + Unstoppable
+  const [recurring, setRecurring]           = useState(false);
+  const [recurrenceFreq, setRecurrenceFreq] = useState<RecurrenceFreq>('weekly');
+  const [recurrenceCount, setRecurrenceCount] = useState(4);
+
   function toggleCombo() {
     if (!isCombo) {
       setSelectedRooms(STUDIO_COMBO_ROOMS as RoomId[]);
@@ -60,6 +68,19 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
     return new Date(val);
   }
 
+  function buildOccurrences(): { start: Date; end: Date }[] {
+    const durationMs = endTime.getTime() - startTime.getTime();
+    if (!recurring) return [{ start: startTime, end: endTime }];
+
+    return Array.from({ length: recurrenceCount }, (_, i) => {
+      let start: Date;
+      if (recurrenceFreq === 'weekly')    start = addWeeks(startTime, i);
+      else if (recurrenceFreq === 'biweekly') start = addWeeks(startTime, i * 2);
+      else                                start = addMonths(startTime, i);
+      return { start, end: new Date(start.getTime() + durationMs) };
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!profile || !fbUser) return;
@@ -75,40 +96,62 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
     }
 
     setLoading(true);
-    try {
-      await createBooking({
-        userId:    fbUser.uid,
-        userEmail: profile.email,
-        userName:  profile.displayName,
-        bandName:  profile.bandName ?? '',
-        roomIds:   selectedRooms,
-        startTime,
-        endTime,
-        notes,
-        isCombo,
-      });
-      toast.success('Buchung erfolgreich gespeichert!');
+    const occurrences = buildOccurrences();
+    let created = 0;
+    let skipped = 0;
 
-      // Trigger booking reminder notifications via API
-      void fetch('/api/notifications/schedule', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: fbUser.uid, startTime: startTime.toISOString(), endTime: endTime.toISOString() }),
-      });
+    for (const occ of occurrences) {
+      try {
+        await createBooking({
+          userId:    fbUser.uid,
+          userEmail: profile.email,
+          userName:  profile.displayName,
+          bandName:  profile.bandName ?? '',
+          roomIds:   selectedRooms,
+          startTime: occ.start,
+          endTime:   occ.end,
+          notes,
+          isCombo,
+        });
+        created++;
 
-      onClose();
-    } catch (err) {
-      if (err instanceof CollisionError || err instanceof DoubleBookingError) {
-        toast.error((err as Error).message, { duration: 5000 });
-      } else {
-        const code = (err as { code?: string }).code ?? 'unknown';
-        const msg  = (err as { message?: string }).message ?? String(err);
-        console.error('[Booking] createBooking failed:', code, msg);
-        toast.error(`Fehler: ${code}`, { duration: 6000 });
+        fetch('/api/notifications/schedule', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ userId: fbUser.uid, startTime: occ.start.toISOString(), endTime: occ.end.toISOString() }),
+        }).catch(() => {});
+      } catch (err) {
+        if (err instanceof CollisionError || err instanceof DoubleBookingError) {
+          skipped++;
+        } else {
+          const code = (err as { code?: string }).code ?? 'unknown';
+          const msg  = (err as { message?: string }).message ?? String(err);
+          console.error('[Booking] createBooking failed:', code, msg);
+          toast.error(`Fehler: ${code}`, { duration: 6000 });
+          setLoading(false);
+          return;
+        }
       }
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
+
+    if (recurring) {
+      if (created === 0) {
+        toast.error('Alle Termine haben einen Konflikt – keine Buchung erstellt.', { duration: 6000 });
+      } else if (skipped > 0) {
+        toast.success(
+          `${created} von ${occurrences.length} Terminen gebucht. ${skipped} übersprungen (Konflikt).`,
+          { duration: 6000 },
+        );
+      } else {
+        toast.success(`Alle ${created} Termine erfolgreich gebucht!`);
+      }
+    } else {
+      toast.success('Buchung erfolgreich gespeichert!');
+    }
+
+    onClose();
   }
 
   return (
@@ -147,119 +190,202 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
           </div>
 
           <form onSubmit={handleSubmit}>
-          <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[55vh]">
-            {/* Room selector */}
-            <div>
-              <label className="block text-sm font-semibold text-text-primary mb-2">
-                Raum
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {ROOMS.filter((r) => !isCombo || STUDIO_COMBO_ROOMS.includes(r.id)).map((room) => {
-                  const selected = selectedRooms.includes(room.id);
-                  return (
-                    <button
-                      key={room.id}
-                      type="button"
-                      onClick={() => toggleRoom(room.id)}
-                      className={cn(
-                        'flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all text-left',
-                        selected
-                          ? 'border-current shadow-card'
-                          : 'border-border hover:border-border/80',
-                      )}
-                      style={selected ? { borderColor: room.color, backgroundColor: room.color + '15' } : undefined}
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: room.color }}
-                      />
-                      <div>
-                        <p className="text-xs font-semibold text-text-primary">{room.name}</p>
-                        <p className="text-[9px] text-text-tertiary">{room.area} m²</p>
-                      </div>
-                    </button>
-                  );
-                })}
+            <div className="px-5 py-4 space-y-5 overflow-y-auto max-h-[65vh]">
+              {/* Room selector */}
+              <div>
+                <label className="block text-sm font-semibold text-text-primary mb-2">
+                  Raum
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {ROOMS.filter((r) => !isCombo || STUDIO_COMBO_ROOMS.includes(r.id)).map((room) => {
+                    const selected = selectedRooms.includes(room.id);
+                    return (
+                      <button
+                        key={room.id}
+                        type="button"
+                        onClick={() => toggleRoom(room.id)}
+                        className={cn(
+                          'flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all text-left',
+                          selected
+                            ? 'border-current shadow-card'
+                            : 'border-border hover:border-border/80',
+                        )}
+                        style={selected ? { borderColor: room.color, backgroundColor: room.color + '15' } : undefined}
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: room.color }}
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-text-primary">{room.name}</p>
+                          <p className="text-[9px] text-text-tertiary">{room.area} m²</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {canCombo && (
+                  <button
+                    type="button"
+                    onClick={toggleCombo}
+                    className={cn(
+                      'mt-2 w-full flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all',
+                      isCombo ? 'border-brand-500 bg-brand-500/10' : 'border-dashed border-border',
+                    )}
+                  >
+                    <Info className="w-4 h-4 text-brand-500 flex-shrink-0" />
+                    <span className="text-xs font-medium text-text-primary">
+                      Studio Combo (Heros + Unstoppable)
+                    </span>
+                  </button>
+                )}
               </div>
 
-              {/* Studio combo toggle (Master only) */}
-              {canCombo && (
+              {/* Time picker */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                    <Clock className="inline w-3.5 h-3.5 mr-1" />Von
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="input-base text-sm"
+                    value={formatTimeInput(startTime)}
+                    onChange={(e) => setStartTime(parseTimeInput(e.target.value))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-text-primary mb-1.5">
+                    Bis
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="input-base text-sm"
+                    value={formatTimeInput(endTime)}
+                    onChange={(e) => setEndTime(parseTimeInput(e.target.value))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Duration display */}
+              {endTime > startTime && (
+                <div className="flex items-center gap-2 text-sm text-text-secondary">
+                  <Clock className="w-4 h-4" />
+                  <span>
+                    Dauer: {((endTime.getTime() - startTime.getTime()) / 3600000).toFixed(1)} Stunden
+                  </span>
+                </div>
+              )}
+
+              {/* Recurring toggle */}
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <Repeat className="w-4 h-4 text-text-secondary" />
+                  <span className="text-sm font-semibold text-text-primary">Wiederkehrend</span>
+                </div>
                 <button
                   type="button"
-                  onClick={toggleCombo}
+                  onClick={() => setRecurring((v) => !v)}
                   className={cn(
-                    'mt-2 w-full flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all',
-                    isCombo ? 'border-brand-500 bg-brand-500/10' : 'border-dashed border-border',
+                    'relative w-11 h-6 rounded-full transition-colors flex-shrink-0',
+                    recurring ? 'bg-brand-500' : 'bg-border',
                   )}
+                  aria-pressed={recurring}
                 >
-                  <Info className="w-4 h-4 text-brand-500 flex-shrink-0" />
-                  <span className="text-xs font-medium text-text-primary">
-                    Studio Combo (Heros + Unstoppable)
-                  </span>
+                  <span
+                    className={cn(
+                      'absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all',
+                      recurring ? 'left-6' : 'left-1',
+                    )}
+                  />
                 </button>
+              </div>
+
+              {/* Recurrence options */}
+              {recurring && (
+                <div className="space-y-3 pl-1">
+                  {/* Frequency */}
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
+                      Wiederholung
+                    </label>
+                    <div className="flex gap-2">
+                      {(['weekly', 'biweekly', 'monthly'] as const).map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => setRecurrenceFreq(f)}
+                          className={cn(
+                            'flex-1 py-2 rounded-[10px] text-xs font-semibold border-2 transition-all',
+                            recurrenceFreq === f
+                              ? 'border-brand-500 bg-brand-500/10 text-brand-500'
+                              : 'border-border text-text-secondary hover:border-border/60',
+                          )}
+                        >
+                          {f === 'weekly' ? 'Wöchentlich' : f === 'biweekly' ? '2-wöchentlich' : 'Monatlich'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Occurrence count */}
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
+                      Anzahl Termine
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setRecurrenceCount((c) => Math.max(2, c - 1))}
+                        className="w-9 h-9 rounded-[10px] border border-border flex items-center justify-center text-base font-bold text-text-primary hover:bg-surface-3 transition-colors"
+                      >
+                        −
+                      </button>
+                      <span className="text-sm font-bold text-text-primary w-8 text-center">
+                        {recurrenceCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setRecurrenceCount((c) => Math.min(52, c + 1))}
+                        className="w-9 h-9 rounded-[10px] border border-border flex items-center justify-center text-base font-bold text-text-primary hover:bg-surface-3 transition-colors"
+                      >
+                        +
+                      </button>
+                      <span className="text-xs text-text-tertiary">Termine gesamt</span>
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
 
-            {/* Time picker */}
-            <div className="grid grid-cols-2 gap-3">
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                  <Clock className="inline w-3.5 h-3.5 mr-1" />Von
+                  Notizen (optional)
                 </label>
-                <input
-                  type="datetime-local"
-                  className="input-base text-sm"
-                  value={formatTimeInput(startTime)}
-                  onChange={(e) => setStartTime(parseTimeInput(e.target.value))}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                  Bis
-                </label>
-                <input
-                  type="datetime-local"
-                  className="input-base text-sm"
-                  value={formatTimeInput(endTime)}
-                  onChange={(e) => setEndTime(parseTimeInput(e.target.value))}
-                  required
+                <textarea
+                  className="input-base resize-none"
+                  rows={2}
+                  placeholder="Kurze Notiz…"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                 />
               </div>
             </div>
 
-            {/* Duration display */}
-            {endTime > startTime && (
-              <div className="flex items-center gap-2 text-sm text-text-secondary">
-                <Clock className="w-4 h-4" />
-                <span>
-                  Dauer: {((endTime.getTime() - startTime.getTime()) / 3600000).toFixed(1)} Stunden
-                </span>
-              </div>
-            )}
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                Notizen (optional)
-              </label>
-              <textarea
-                className="input-base resize-none"
-                rows={2}
-                placeholder="Kurze Notiz…"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-
-          </div>
-          <div className="px-5 py-4 border-t border-border">
+            <div className="px-5 py-4 border-t border-border">
               <button
                 type="submit"
                 className="btn-primary w-full"
                 disabled={loading || selectedRooms.length === 0}
               >
-                {loading ? 'Bitte warten…' : 'Buchen'}
+                {loading
+                  ? 'Bitte warten…'
+                  : recurring
+                    ? `${recurrenceCount} Termine buchen`
+                    : 'Buchen'}
               </button>
             </div>
           </form>

@@ -6,9 +6,13 @@ import { useAuthStore } from '@/store/authStore';
 import { auth } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: CURRENT_YEAR - 2023 }, (_, i) => CURRENT_YEAR - i);
+
 export default function ExportPage() {
   const profile  = useAuthStore((s) => s.profile);
   const [loading, setLoading] = useState(false);
+  const [year, setYear]       = useState(CURRENT_YEAR);
 
   async function handleExport() {
     if (!profile) return;
@@ -16,7 +20,7 @@ export default function ExportPage() {
     try {
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch(
-        `/api/export?masterId=${profile.uid}`,
+        `/api/export?masterId=${profile.uid}&year=${year}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -26,7 +30,7 @@ export default function ExportPage() {
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
-      a.download = `buchungen-${new Date().getFullYear()}.csv`;
+      a.download = `buchungen-${year}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Export heruntergeladen!');
@@ -46,16 +50,27 @@ export default function ExportPage() {
         <div>
           <h3 className="text-lg font-bold text-text-primary">Buchungsexport</h3>
           <p className="text-sm text-text-secondary mt-1.5">
-            Alle Buchungen deines Mitgliederkreises im aktuellen Jahr als CSV herunterladen.
+            Alle Buchungen als CSV herunterladen. Historische Jahre bleiben dauerhaft verfügbar.
           </p>
         </div>
+
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="input-base w-32 text-center"
+        >
+          {YEARS.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+
         <button
           onClick={handleExport}
           disabled={loading}
           className="btn-primary gap-2"
         >
           <Download className="w-4 h-4" />
-          {loading ? 'Exportieren…' : `CSV herunterladen (${new Date().getFullYear()})`}
+          {loading ? 'Exportieren…' : `CSV herunterladen (${year})`}
         </button>
       </div>
     </div>

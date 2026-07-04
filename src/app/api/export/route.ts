@@ -26,13 +26,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Fetch users in circle
-    const usersSnap = await adminDb
-      .collection('users')
-      .where('masterId', '==', masterId)
-      .get();
+    // Fetch users in circle (main-master sees everyone)
+    const usersSnap = callerRole === 'main-master'
+      ? await adminDb.collection('users').get()
+      : await adminDb.collection('users').where('masterId', '==', masterId).get();
 
-    const year  = new Date().getFullYear();
+    const year  = parseInt(req.nextUrl.searchParams.get('year') ?? String(new Date().getFullYear()), 10);
     const start = new Date(`${year}-01-01T00:00:00Z`);
     const end   = new Date(`${year}-12-31T23:59:59Z`);
 

@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ scheduled: true });
   } catch (err) {
-    console.error('Schedule notification error:', err);
+    console.warn('Schedule notification error (non-critical):', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

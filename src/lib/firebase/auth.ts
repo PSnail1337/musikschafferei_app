@@ -18,6 +18,14 @@ import type { UserRole, UserType } from '../utils/constants';
 
 const googleProvider = new GoogleAuthProvider();
 
+// Detects in-app browsers (WhatsApp, Instagram, FB, TikTok, etc.) that
+// partition sessionStorage and break Firebase's redirect-based OAuth flow.
+export function isInAppBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /WhatsApp|Instagram|FBAN|FBAV|FB_IAB|TikTok|Line\/|MicroMessenger|GSA\//.test(ua);
+}
+
 // ─── Sign-in / sign-up ────────────────────────────────────────
 
 export async function signUpWithEmail(
