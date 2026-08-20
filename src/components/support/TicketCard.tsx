@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, Mic, MessageSquare } from 'lucide-react';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
-import { updateTicketStatus } from '@/lib/services/supportService';
+import { ChevronRight, Mic, MessageSquare, Check, X } from 'lucide-react';
+import { updateTicketStatus, updateTicketApproval } from '@/lib/services/supportService';
+import { cancelBooking } from '@/lib/services/bookingService';
 import { useAuthStore } from '@/store/authStore';
-import { TICKET_STATUSES } from '@/lib/utils/constants';
+import { useSettingsStore } from '@/store/settingsStore';
+import { TICKET_STATUSES, TICKET_TYPE_LABELS } from '@/lib/utils/constants';
+import { formatLocalizedShortDate } from '@/lib/utils/dateUtils';
+import { useT } from '@/lib/hooks/useTranslation';
 import type { SupportTicket } from '@/lib/models/support';
 import type { TicketStatus } from '@/lib/utils/constants';
 import { cn } from '@/lib/utils/cn';
@@ -27,8 +29,31 @@ interface Props {
 
 export function TicketCard({ ticket, canManage, onRefresh }: Props) {
   const profile  = useAuthStore((s) => s.profile);
+  const locale   = useSettingsStore((s) => s.locale);
+  const t        = useT();
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+
+  const isPendingDoubleBooking = ticket.type === 'doppelbuchung' && ticket.approvalStatus === 'pending';
+
+  async function handleApproval(approvalStatus: 'accepted' | 'declined') {
+    if (!profile) return;
+    setUpdating(true);
+    try {
+      if (approvalStatus === 'declined') {
+        for (const bookingId of ticket.linkedBookingIds ?? []) {
+          await cancelBooking(bookingId, profile.uid);
+        }
+      }
+      await updateTicketApproval(ticket.id, approvalStatus, profile.uid);
+      toast.success(t(approvalStatus === 'accepted' ? 'Doppelbuchung akzeptiert.' : 'Doppelbuchung abgelehnt, Buchung storniert.'));
+      onRefresh();
+    } catch {
+      toast.error(t('Fehler beim Aktualisieren.'));
+    } finally {
+      setUpdating(false);
+    }
+  }
 
   async function handleStatusChange(status: TicketStatus) {
     if (!profile) return;
@@ -51,7 +76,7 @@ export function TicketCard({ ticket, canManage, onRefresh }: Props) {
 
       onRefresh();
     } catch {
-      toast.error('Fehler beim Aktualisieren.');
+      toast.error(t('Fehler beim Aktualisieren.'));
     } finally {
       setUpdating(false);
     }
@@ -78,15 +103,15 @@ export function TicketCard({ ticket, canManage, onRefresh }: Props) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={statusClass[ticket.status]}>{STATUS_LABELS[ticket.status]}</span>
+            <span className={statusClass[ticket.status]}>{t(STATUS_LABELS[ticket.status])}</span>
             <span className="badge bg-surface-3 text-text-secondary">
-              {ticket.type === 'feedback' ? 'Feedback' : 'Reklamation'}
+              {t(TICKET_TYPE_LABELS[ticket.type])}
             </span>
           </div>
           <p className="text-sm font-medium text-text-primary mt-1.5 truncate">{ticket.message}</p>
           <p className="text-xs text-text-tertiary mt-0.5">
             {ticket.userName} ·{' '}
-            {format(ticket.createdAt.toDate(), 'd. MMM yyyy', { locale: de })}
+            {formatLocalizedShortDate(ticket.createdAt.toDate(), locale)}
           </p>
         </div>
 
@@ -104,25 +129,45 @@ export function TicketCard({ ticket, canManage, onRefresh }: Props) {
 
           {ticket.adminNotes && (
             <div className="bg-surface-3 rounded-[8px] p-3">
-              <p className="text-xs font-semibold text-text-secondary mb-1">Admin-Notiz</p>
+              <p className="text-xs font-semibold text-text-secondary mb-1">{t('Admin-Notiz')}</p>
               <p className="text-sm text-text-primary">{ticket.adminNotes}</p>
             </div>
           )}
 
-          {/* Status management (Admin+) */}
-          {canManage && ticket.status !== 'done' && (
+          {/* Doppelbuchung approval (Admin+) */}
+          {canManage && isPendingDoubleBooking ? (
             <div className="flex flex-wrap gap-2">
-              {TICKET_STATUSES.filter((s) => s !== ticket.status).map((status) => (
-                <button
-                  key={status}
-                  disabled={updating}
-                  onClick={() => handleStatusChange(status)}
-                  className="btn-secondary py-1.5 px-3 text-xs"
-                >
-                  → {STATUS_LABELS[status]}
-                </button>
-              ))}
+              <button
+                disabled={updating}
+                onClick={() => handleApproval('accepted')}
+                className="btn-secondary py-1.5 px-3 text-xs text-success"
+              >
+                <Check className="w-3.5 h-3.5" /> {t('Annehmen')}
+              </button>
+              <button
+                disabled={updating}
+                onClick={() => handleApproval('declined')}
+                className="btn-secondary py-1.5 px-3 text-xs text-danger"
+              >
+                <X className="w-3.5 h-3.5" /> {t('Ablehnen')}
+              </button>
             </div>
+          ) : (
+            /* Status management (Admin+) */
+            canManage && ticket.status !== 'done' && (
+              <div className="flex flex-wrap gap-2">
+                {TICKET_STATUSES.filter((s) => s !== ticket.status).map((status) => (
+                  <button
+                    key={status}
+                    disabled={updating}
+                    onClick={() => handleStatusChange(status)}
+                    className="btn-secondary py-1.5 px-3 text-xs"
+                  >
+                    → {t(STATUS_LABELS[status])}
+                  </button>
+                ))}
+              </div>
+            )
           )}
         </div>
       )}

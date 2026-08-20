@@ -6,8 +6,10 @@ import { X, Mic, Square, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createTicket } from '@/lib/services/supportService';
 import { useAuthStore } from '@/store/authStore';
+import { TICKET_TYPE_LABELS } from '@/lib/utils/constants';
 import type { TicketType } from '@/lib/utils/constants';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/lib/hooks/useTranslation';
 
 interface Props {
   onClose:   () => void;
@@ -17,6 +19,7 @@ interface Props {
 export function TicketCreateSheet({ onClose, onCreated }: Props) {
   const profile = useAuthStore((s) => s.profile);
   const fbUser  = useAuthStore((s) => s.firebaseUser);
+  const t       = useT();
 
   const [type, setType]       = useState<TicketType>('feedback');
   const [message, setMessage] = useState('');
@@ -53,7 +56,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
     e.preventDefault();
     if (!profile || !fbUser) return;
     if (!message.trim() && !voiceBlob) {
-      toast.error('Bitte schreibe eine Nachricht oder nimm eine Sprachnachricht auf.');
+      toast.error(t('Bitte schreibe eine Nachricht oder nimm eine Sprachnachricht auf.'));
       return;
     }
 
@@ -67,10 +70,10 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
         message:   message.trim(),
         voiceBlob,
       });
-      toast.success('Ticket erstellt!');
+      toast.success(t('Ticket erstellt!'));
       onCreated();
     } catch {
-      toast.error('Ticket konnte nicht erstellt werden.');
+      toast.error(t('Ticket konnte nicht erstellt werden.'));
     } finally {
       setLoading(false);
     }
@@ -96,7 +99,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
             <div className="w-10 h-1 rounded-full bg-border" />
           </div>
           <div className="flex items-center justify-between px-5 pb-4 border-b border-border">
-            <h2 className="text-lg font-bold text-text-primary">Neues Ticket</h2>
+            <h2 className="text-lg font-bold text-text-primary">{t('Neues Ticket')}</h2>
             <button onClick={onClose} className="btn-ghost p-2"><X className="w-5 h-5" /></button>
           </div>
 
@@ -104,19 +107,19 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
           <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[55vh]">
             {/* Type selector */}
             <div className="grid grid-cols-2 gap-2">
-              {(['feedback', 'reklamation'] as TicketType[]).map((t) => (
+              {(['feedback', 'reklamation'] as TicketType[]).map((ticketType) => (
                 <button
-                  key={t}
+                  key={ticketType}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => setType(ticketType)}
                   className={cn(
                     'rounded-[10px] py-2.5 text-sm font-semibold border-2 transition-all capitalize',
-                    type === t
+                    type === ticketType
                       ? 'border-brand-500 bg-brand-500/10 text-brand-500'
                       : 'border-border text-text-secondary hover:border-border/80',
                   )}
                 >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {t(TICKET_TYPE_LABELS[ticketType])}
                 </button>
               ))}
             </div>
@@ -124,12 +127,12 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
             {/* Text message */}
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-text-primary mb-1.5">
-                <MessageSquare className="w-4 h-4" />Nachricht
+                <MessageSquare className="w-4 h-4" />{t('Nachricht')}
               </label>
               <textarea
                 className="input-base resize-none"
                 rows={4}
-                placeholder="Beschreibe dein Anliegen…"
+                placeholder={t('Beschreibe dein Anliegen…')}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
@@ -138,7 +141,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
             {/* Voice recording */}
             <div>
               <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                Oder Sprachnachricht
+                {t('Oder Sprachnachricht')}
               </label>
               <div className="flex items-center gap-3">
                 {!recording ? (
@@ -148,7 +151,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
                     className="btn-secondary flex-shrink-0"
                   >
                     <Mic className="w-4 h-4 text-danger" />
-                    Aufnehmen
+                    {t('Aufnehmen')}
                   </button>
                 ) : (
                   <button
@@ -157,7 +160,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
                     className="btn-danger flex-shrink-0 animate-pulse"
                   >
                     <Square className="w-4 h-4" />
-                    Stopp
+                    {t('Stopp')}
                   </button>
                 )}
                 {voiceUrl && (
@@ -169,7 +172,7 @@ export function TicketCreateSheet({ onClose, onCreated }: Props) {
           </div>
           <div className="px-5 py-4 border-t border-border">
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Senden…' : 'Ticket senden'}
+              {loading ? t('Senden…') : t('Ticket senden')}
             </button>
           </div>
           </form>

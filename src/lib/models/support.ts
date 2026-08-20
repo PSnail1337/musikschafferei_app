@@ -18,6 +18,10 @@ export interface SupportTicket {
   createdAt:   Timestamp;
   updatedAt:   Timestamp;
   statusHistory: TicketStatusEvent[];
+  /** Booking IDs this ticket concerns (only set for type 'doppelbuchung') */
+  linkedBookingIds?: string[];
+  /** Admin approval state for a 'doppelbuchung' ticket */
+  approvalStatus?: 'pending' | 'accepted' | 'declined';
 }
 
 export interface TicketStatusEvent {

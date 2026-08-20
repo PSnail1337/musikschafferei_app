@@ -9,10 +9,12 @@ import { isAdmin } from '@/lib/utils/roleUtils';
 import type { SupportTicket } from '@/lib/models/support';
 import { TicketCard } from '@/components/support/TicketCard';
 import { TicketCreateSheet } from '@/components/support/TicketCreateSheet';
+import { useT } from '@/lib/hooks/useTranslation';
 
 export default function SupportPage() {
   const profile  = useAuthStore((s) => s.profile);
   const fbUser   = useAuthStore((s) => s.firebaseUser);
+  const t        = useT();
   const [tickets, setTickets]   = useState<SupportTicket[]>([]);
   const [loading, setLoading]   = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -38,14 +40,14 @@ export default function SupportPage() {
       {/* Header + create button */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-text-secondary">
-          {loading ? '' : `${tickets.length} ${canSeeAll ? 'Tickets' : 'meine Tickets'}`}
+          {loading ? '' : `${tickets.length} ${t(canSeeAll ? 'Tickets' : 'meine Tickets')}`}
         </p>
         <button
           onClick={() => setShowCreate(true)}
           className="btn-primary py-2 px-3 text-sm"
         >
           <Plus className="w-4 h-4" />
-          Neues Ticket
+          {t('Neues Ticket')}
         </button>
       </div>
 
@@ -59,7 +61,7 @@ export default function SupportPage() {
       ) : tickets.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <MessageSquare className="w-10 h-10 text-text-tertiary" />
-          <p className="text-sm text-text-secondary">Noch keine Support-Tickets.</p>
+          <p className="text-sm text-text-secondary">{t('Noch keine Support-Tickets.')}</p>
         </div>
       ) : (
         <div className="space-y-2">

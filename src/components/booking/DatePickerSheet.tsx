@@ -5,10 +5,12 @@ import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, getDay, isSameDay, isToday, startOfDay,
 } from 'date-fns';
-import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
+import { useSettingsStore } from '@/store/settingsStore';
+import { formatLocalizedMonthYear } from '@/lib/utils/dateUtils';
+import { useT } from '@/lib/hooks/useTranslation';
 
 interface Props {
   selected: Date;
@@ -16,9 +18,13 @@ interface Props {
   onClose:  () => void;
 }
 
-const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const WEEKDAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const WEEKDAYS_EN = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 export function DatePickerSheet({ selected, onSelect, onClose }: Props) {
+  const locale = useSettingsStore((s) => s.locale);
+  const t = useT();
+  const WEEKDAYS = locale === 'de' ? WEEKDAYS_DE : WEEKDAYS_EN;
   const [viewMonth, setViewMonth] = useState(startOfMonth(selected));
 
   const days      = eachDayOfInterval({ start: startOfMonth(viewMonth), end: endOfMonth(viewMonth) });
@@ -53,7 +59,7 @@ export function DatePickerSheet({ selected, onSelect, onClose }: Props) {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="text-sm font-bold text-text-primary capitalize">
-              {format(viewMonth, 'MMMM yyyy', { locale: de })}
+              {formatLocalizedMonthYear(viewMonth, locale)}
             </span>
             <button
               onClick={() => setViewMonth((m) => addMonths(m, 1))}
@@ -102,7 +108,7 @@ export function DatePickerSheet({ selected, onSelect, onClose }: Props) {
               onClick={() => { onSelect(startOfDay(new Date())); onClose(); }}
               className="mt-3 w-full text-xs text-brand-500 font-semibold py-1.5 hover:bg-brand-500/5 rounded-[8px] transition-colors"
             >
-              Heute
+              {t('Heute')}
             </button>
           )}
         </motion.div>

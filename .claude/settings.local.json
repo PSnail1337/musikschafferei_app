@@ -6,7 +6,21 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\pstro\\\\Desktop\\\\musicmaker.studio\\\\musikschafferei_app\\\\src\" -Recurse -Directory | Where-Object { $_.Name -match '\\(lager|inventory\\)' } | Select-Object -ExpandProperty FullName)",
       "Bash(xargs grep -l \"lager_artikel\\\\|lager_log\\\\|lager_dropdowns\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\pstro\\\\Desktop\\\\musicmaker.studio\\\\musikschafferei_app\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(xargs grep -lE \"date-fns|Intl\\\\.DateTimeFormat\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/quota)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/users)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/support)",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:3000/login)",
+      "Bash(curl -s \"http://localhost:3000/_next/static/css/app/layout.css?v=1787219033637\")",
+      "Bash(tasklist)",
+      "Bash(tail -n 60 /tmp/dev.log)",
+      "Bash(taskkill //F //PID 74512)",
+      "Bash(rm -rf .next)",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/check-i18n.js)"
     ]
   }
 }

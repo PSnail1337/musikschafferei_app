@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
-import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { subscribeBookingsForDay } from '@/lib/services/bookingService';
 import { useAuthStore } from '@/store/authStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { isMaster } from '@/lib/utils/roleUtils';
+import { formatLocalizedDate } from '@/lib/utils/dateUtils';
+import { useT } from '@/lib/hooks/useTranslation';
 import type { Booking } from '@/lib/models/booking';
 import { CalendarLandscape } from '@/components/booking/CalendarLandscape';
 import { CalendarPortrait } from '@/components/booking/CalendarPortrait';
@@ -16,6 +18,8 @@ import { DatePickerSheet } from '@/components/booking/DatePickerSheet';
 
 export default function BookingPage() {
   const profile    = useAuthStore((s) => s.profile);
+  const locale     = useSettingsStore((s) => s.locale);
+  const t          = useT();
   const [date, setDate]       = useState<Date>(startOfDay(new Date()));
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLandscape, setIsLandscape] = useState(false);
@@ -51,7 +55,7 @@ export default function BookingPage() {
         <button
           onClick={prevDay}
           className="btn-ghost p-2"
-          aria-label="Vorheriger Tag"
+          aria-label={t('Vorheriger Tag')}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -60,14 +64,14 @@ export default function BookingPage() {
           type="button"
           onClick={() => setShowDatePicker((v) => !v)}
           className="flex flex-col items-center hover:opacity-70 active:opacity-50 transition-opacity"
-          aria-label="Datum auswählen"
+          aria-label={t('Datum auswählen')}
         >
           <span className="text-sm font-semibold text-text-primary">
-            {format(date, 'EEEE, d. MMMM yyyy', { locale: de })}
+            {formatLocalizedDate(date, locale)}
           </span>
           {isToday && (
             <span className="text-[10px] font-semibold text-brand-500 uppercase tracking-wide mt-0.5">
-              Heute
+              {t('Heute')}
             </span>
           )}
         </button>
@@ -75,7 +79,7 @@ export default function BookingPage() {
         <button
           onClick={nextDay}
           className="btn-ghost p-2"
-          aria-label="Nächster Tag"
+          aria-label={t('Nächster Tag')}
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -105,7 +109,7 @@ export default function BookingPage() {
       <button
         onClick={() => setShowCreate({})}
         className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-brand-500 text-white shadow-card-lg flex items-center justify-center hover:bg-brand-600 active:scale-95 transition-all"
-        aria-label="Neue Buchung"
+        aria-label={t('Neue Buchung')}
       >
         <Plus className="w-6 h-6" />
       </button>

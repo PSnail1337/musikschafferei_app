@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, ChevronRight, UserCheck, UserX } from 'lucide-react';
 import {
   getAllUsers, getUsersByMaster, setUserRole, setUserType,
-  setCancellationWindow, deactivateUser, activateUser, setAnnualQuota,
+  setCancellationWindow, deactivateUser, activateUser, setAnnualQuota, setBandName,
 } from '@/lib/services/adminService';
 import { useAuthStore } from '@/store/authStore';
 import { isMainMaster, ROLE_LABELS, TYPE_LABELS } from '@/lib/utils/roleUtils';
@@ -145,6 +145,20 @@ export default function UserManagementPage() {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* Band */}
+                <div>
+                  <label className="text-xs font-semibold text-text-secondary mb-1 block">
+                    Band
+                  </label>
+                  <input
+                    type="text"
+                    className="input-base text-sm"
+                    defaultValue={user.bandName}
+                    placeholder="z.B. The Rockets"
+                    onBlur={(e) => setBandName(user.uid, e.target.value)}
+                  />
                 </div>
 
                 {/* Cancellation window */}

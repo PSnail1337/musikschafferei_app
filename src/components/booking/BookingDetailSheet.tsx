@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
 import { X, Clock, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cancelBooking, updateBookingNotes } from '@/lib/services/bookingService';
 import { useAuthStore } from '@/store/authStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { isAdmin } from '@/lib/utils/roleUtils';
 import { ROOMS } from '@/lib/utils/constants';
+import { formatLocalizedDate } from '@/lib/utils/dateUtils';
+import { useT } from '@/lib/hooks/useTranslation';
 import type { Booking } from '@/lib/models/booking';
 
 interface Props {
@@ -20,6 +22,8 @@ interface Props {
 export function BookingDetailSheet({ booking, onClose }: Props) {
   const profile = useAuthStore((s) => s.profile);
   const fbUser  = useAuthStore((s) => s.firebaseUser);
+  const locale  = useSettingsStore((s) => s.locale);
+  const t       = useT();
 
   const startDate = booking.startTime.toDate();
   const endDate   = booking.endTime.toDate();
@@ -40,10 +44,10 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
     setLoading(true);
     try {
       await updateBookingNotes(booking.id, notes);
-      toast.success('Notiz gespeichert.');
+      toast.success(t('Notiz gespeichert.'));
       onClose();
     } catch {
-      toast.error('Fehler beim Speichern.');
+      toast.error(t('Fehler beim Speichern.'));
     } finally {
       setLoading(false);
     }
@@ -54,7 +58,7 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
     setCancelling(true);
     try {
       await cancelBooking(booking.id, fbUser.uid);
-      toast.success('Buchung storniert.');
+      toast.success(t('Buchung storniert.'));
       onClose();
     } catch (err) {
       const code = (err as { code?: string }).code ?? 'unknown';
@@ -106,7 +110,7 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
             <div className="card p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm text-text-primary font-semibold">
                 <Clock className="w-4 h-4 text-text-tertiary" />
-                {format(startDate, 'EEEE, d. MMMM yyyy', { locale: de })}
+                {formatLocalizedDate(startDate, locale)}
               </div>
               <p className="text-sm text-text-secondary pl-6">
                 {format(startDate, 'HH:mm')} – {format(endDate, 'HH:mm')}
@@ -123,19 +127,19 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
             {canEdit ? (
               <div>
                 <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                  Notizen
+                  {t('Notizen')}
                 </label>
                 <textarea
                   className="input-base resize-none"
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Keine Notizen…"
+                  placeholder={t('Keine Notizen…')}
                 />
               </div>
             ) : booking.notes ? (
               <div>
-                <p className="text-sm font-semibold text-text-primary mb-1">Notizen</p>
+                <p className="text-sm font-semibold text-text-primary mb-1">{t('Notizen')}</p>
                 <p className="text-sm text-text-secondary">{booking.notes}</p>
               </div>
             ) : null}
@@ -143,20 +147,20 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
             {/* Cancel confirmation */}
             {confirmCancel && (
               <div className="card p-4 border border-danger/30 bg-danger/5 space-y-3">
-                <p className="text-sm font-semibold text-danger">Buchung wirklich stornieren?</p>
+                <p className="text-sm font-semibold text-danger">{t('Buchung wirklich stornieren?')}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={handleCancel}
                     disabled={cancelling}
                     className="btn-danger flex-1 py-2 text-sm"
                   >
-                    {cancelling ? 'Stornieren…' : 'Ja, stornieren'}
+                    {cancelling ? t('Stornieren…') : t('Ja, stornieren')}
                   </button>
                   <button
                     onClick={() => setConfirmCancel(false)}
                     className="btn-secondary flex-1 py-2 text-sm"
                   >
-                    Abbrechen
+                    {t('Abbrechen')}
                   </button>
                 </div>
               </div>
@@ -171,7 +175,7 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
                 className="btn-ghost text-danger flex items-center gap-1.5 px-3"
               >
                 <Trash2 className="w-4 h-4" />
-                Stornieren
+                {t('Stornieren')}
               </button>
             )}
             {canEdit && (
@@ -180,11 +184,11 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
                 disabled={loading}
                 className="btn-primary flex-1"
               >
-                {loading ? 'Speichern…' : 'Speichern'}
+                {loading ? t('Speichern…') : t('Speichern')}
               </button>
             )}
             {!canEdit && (
-              <button onClick={onClose} className="btn-secondary flex-1">Schließen</button>
+              <button onClick={onClose} className="btn-secondary flex-1">{t('Schließen')}</button>
             )}
           </div>
         </motion.div>

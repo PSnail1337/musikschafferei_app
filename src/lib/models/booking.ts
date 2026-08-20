@@ -15,7 +15,7 @@ export interface Booking {
   /** Duration in minutes (denormalized for easy queries) */
   durationMin: number;
   notes:       string;
-  /** true if this was a studio combo (Heros + Unstoppable) */
+  /** true if this was a studio combo (Believe + Unstoppable) */
   isCombo:     boolean;
   /** Notification tasks already dispatched */
   notifiedStart: boolean;

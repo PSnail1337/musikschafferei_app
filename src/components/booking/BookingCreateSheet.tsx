@@ -2,16 +2,23 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, addHours, addWeeks, addMonths } from 'date-fns';
+import { addHours, addWeeks, addMonths } from 'date-fns';
 import { X, Clock, Info, Repeat } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
-  createBooking, CollisionError, DoubleBookingError,
+  createBooking, CollisionError, BandQuotaExceededError,
 } from '@/lib/services/bookingService';
+import { createTicket } from '@/lib/services/supportService';
 import { useAuthStore } from '@/store/authStore';
-import { ROOMS, STUDIO_COMBO_ROOMS, DEFAULT_BOOKING_HOURS, MIN_BOOKING_HOURS } from '@/lib/utils/constants';
+import { useSettingsStore } from '@/store/settingsStore';
+import {
+  ROOMS, STUDIO_COMBO_ROOMS, IMAGINE_HEROS_COMBO_ROOMS, DEFAULT_BOOKING_HOURS, MIN_BOOKING_HOURS,
+} from '@/lib/utils/constants';
 import type { RoomId } from '@/lib/utils/constants';
 import { cn } from '@/lib/utils/cn';
+import { formatLocalizedShortDateTime } from '@/lib/utils/dateUtils';
+import { useT } from '@/lib/hooks/useTranslation';
+import { TimeSelect } from './TimeSelect';
 
 type RecurrenceFreq = 'weekly' | 'biweekly' | 'monthly';
 
@@ -25,6 +32,8 @@ interface Props {
 export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, onClose }: Props) {
   const profile = useAuthStore((s) => s.profile);
   const fbUser  = useAuthStore((s) => s.firebaseUser);
+  const locale  = useSettingsStore((s) => s.locale);
+  const t       = useT();
 
   const defaultStart = defaultStartTime ?? (() => {
     const d = new Date();
@@ -41,6 +50,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
   const [notes, setNotes]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [isCombo, setIsCombo]     = useState(false);
+  const [isImagineHerosCombo, setIsImagineHerosCombo] = useState(false);
 
   const [recurring, setRecurring]           = useState(false);
   const [recurrenceFreq, setRecurrenceFreq] = useState<RecurrenceFreq>('weekly');
@@ -49,23 +59,26 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
   function toggleCombo() {
     if (!isCombo) {
       setSelectedRooms(STUDIO_COMBO_ROOMS as RoomId[]);
+      setIsImagineHerosCombo(false);
     } else {
       setSelectedRooms([ROOMS[0].id]);
     }
     setIsCombo(!isCombo);
   }
 
+  function toggleImagineHerosCombo() {
+    if (!isImagineHerosCombo) {
+      setSelectedRooms(IMAGINE_HEROS_COMBO_ROOMS as RoomId[]);
+      setIsCombo(false);
+    } else {
+      setSelectedRooms([ROOMS[0].id]);
+    }
+    setIsImagineHerosCombo(!isImagineHerosCombo);
+  }
+
   function toggleRoom(roomId: RoomId) {
-    if (isCombo) return;
+    if (isCombo || isImagineHerosCombo) return;
     setSelectedRooms([roomId]);
-  }
-
-  function formatTimeInput(d: Date) {
-    return format(d, "yyyy-MM-dd'T'HH:mm");
-  }
-
-  function parseTimeInput(val: string): Date {
-    return new Date(val);
   }
 
   function buildOccurrences(): { start: Date; end: Date }[] {
@@ -87,11 +100,11 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
 
     const durationHours = (endTime.getTime() - startTime.getTime()) / 3600000;
     if (durationHours < MIN_BOOKING_HOURS) {
-      toast.error(`Mindestbuchungszeit: ${MIN_BOOKING_HOURS} Stunde`);
+      toast.error(t('Mindestbuchungszeit: {n} Stunde', { n: MIN_BOOKING_HOURS }));
       return;
     }
     if (startTime >= endTime) {
-      toast.error('Endzeit muss nach der Startzeit liegen.');
+      toast.error(t('Endzeit muss nach der Startzeit liegen.'));
       return;
     }
 
@@ -102,7 +115,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
 
     for (const occ of occurrences) {
       try {
-        await createBooking({
+        const result = await createBooking({
           userId:    fbUser.uid,
           userEmail: profile.email,
           userName:  profile.displayName,
@@ -120,14 +133,32 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ userId: fbUser.uid, startTime: occ.start.toISOString(), endTime: occ.end.toISOString() }),
         }).catch(() => {});
+
+        if (result.needsApprovalRoomIds.length > 0) {
+          const newRoomNames = selectedRooms.map((id) => ROOMS.find((r) => r.id === id)?.name ?? id).join(' + ');
+          const message = isCombo || isImagineHerosCombo
+            ? `Kombi-Buchung angefragt: ${newRoomNames} am ${formatLocalizedShortDateTime(occ.start, locale)} benötigt Freigabe.`
+            : `Gleichzeitige Buchung: ${newRoomNames} überschneidet sich mit einer bestehenden Buchung in ${[...new Set(result.needsApprovalRoomIds)].map((id) => ROOMS.find((r) => r.id === id)?.name ?? id).join(', ')} am ${formatLocalizedShortDateTime(occ.start, locale)}.`;
+          createTicket({
+            userId:    fbUser.uid,
+            userEmail: profile.email,
+            userName:  profile.displayName,
+            type:      'doppelbuchung',
+            message,
+            linkedBookingIds: [result.id],
+          }).catch(() => {});
+        }
       } catch (err) {
-        if (err instanceof CollisionError || err instanceof DoubleBookingError) {
+        if (err instanceof CollisionError) {
           skipped++;
+        } else if (err instanceof BandQuotaExceededError) {
+          skipped++;
+          toast.error(err.message, { duration: 6000 });
         } else {
           const code = (err as { code?: string }).code ?? 'unknown';
           const msg  = (err as { message?: string }).message ?? String(err);
           console.error('[Booking] createBooking failed:', code, msg);
-          toast.error(`Fehler: ${code}`, { duration: 6000 });
+          toast.error(t('Fehler: {code}', { code }), { duration: 6000 });
           setLoading(false);
           return;
         }
@@ -138,17 +169,18 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
 
     if (recurring) {
       if (created === 0) {
-        toast.error('Alle Termine haben einen Konflikt – keine Buchung erstellt.', { duration: 6000 });
+        toast.error(t('Alle Termine haben einen Konflikt – keine Buchung erstellt.'), { duration: 6000 });
       } else if (skipped > 0) {
         toast.success(
-          `${created} von ${occurrences.length} Terminen gebucht. ${skipped} übersprungen (Konflikt).`,
+          t('{created} von {total} Terminen gebucht. {skipped} übersprungen (Konflikt).',
+            { created, total: occurrences.length, skipped }),
           { duration: 6000 },
         );
       } else {
-        toast.success(`Alle ${created} Termine erfolgreich gebucht!`);
+        toast.success(t('Alle {n} Termine erfolgreich gebucht!', { n: created }));
       }
     } else {
-      toast.success('Buchung erfolgreich gespeichert!');
+      toast.success(t('Buchung erfolgreich gespeichert!'));
     }
 
     onClose();
@@ -183,7 +215,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pb-4 border-b border-border">
-            <h2 className="text-lg font-bold text-text-primary">Neue Buchung</h2>
+            <h2 className="text-lg font-bold text-text-primary">{t('Neue Buchung')}</h2>
             <button onClick={onClose} className="btn-ghost p-2">
               <X className="w-5 h-5" />
             </button>
@@ -194,10 +226,14 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
               {/* Room selector */}
               <div>
                 <label className="block text-sm font-semibold text-text-primary mb-2">
-                  Raum
+                  {t('Raum')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {ROOMS.filter((r) => !isCombo || STUDIO_COMBO_ROOMS.includes(r.id)).map((room) => {
+                  {ROOMS.filter((r) =>
+                    (!isCombo && !isImagineHerosCombo)
+                    || (isCombo && STUDIO_COMBO_ROOMS.includes(r.id))
+                    || (isImagineHerosCombo && IMAGINE_HEROS_COMBO_ROOMS.includes(r.id)),
+                  ).map((room) => {
                     const selected = selectedRooms.includes(room.id);
                     return (
                       <button
@@ -236,38 +272,35 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                   >
                     <Info className="w-4 h-4 text-brand-500 flex-shrink-0" />
                     <span className="text-xs font-medium text-text-primary">
-                      Studio Combo (Heros + Unstoppable)
+                      {t('Studio Combo (Believe + Unstoppable) — benötigt Freigabe durch Admin')}
                     </span>
                   </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={toggleImagineHerosCombo}
+                  className={cn(
+                    'mt-2 w-full flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all',
+                    isImagineHerosCombo ? 'border-brand-500 bg-brand-500/10' : 'border-dashed border-border',
+                  )}
+                >
+                  <Info className="w-4 h-4 text-brand-500 flex-shrink-0" />
+                  <span className="text-xs font-medium text-text-primary">
+                    {t('Kombi (Imagine + Believe) — benötigt Freigabe durch Admin')}
+                  </span>
+                </button>
+                {(isCombo || isImagineHerosCombo) && (
+                  <p className="mt-1.5 text-[11px] text-text-tertiary px-1">
+                    {t('Diese Buchung wird als Ticket zur Freigabe an die Verwaltung geschickt.')}
+                  </p>
                 )}
               </div>
 
               {/* Time picker */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                    <Clock className="inline w-3.5 h-3.5 mr-1" />Von
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="input-base text-sm"
-                    value={formatTimeInput(startTime)}
-                    onChange={(e) => setStartTime(parseTimeInput(e.target.value))}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                    Bis
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="input-base text-sm"
-                    value={formatTimeInput(endTime)}
-                    onChange={(e) => setEndTime(parseTimeInput(e.target.value))}
-                    required
-                  />
-                </div>
+              <div className="grid grid-cols-1 gap-3">
+                <TimeSelect label={t('Von')} value={startTime} onChange={setStartTime} locale={locale} />
+                <TimeSelect label={t('Bis')} value={endTime} onChange={setEndTime} locale={locale} />
               </div>
 
               {/* Duration display */}
@@ -275,7 +308,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                 <div className="flex items-center gap-2 text-sm text-text-secondary">
                   <Clock className="w-4 h-4" />
                   <span>
-                    Dauer: {((endTime.getTime() - startTime.getTime()) / 3600000).toFixed(1)} Stunden
+                    {t('Dauer')}: {((endTime.getTime() - startTime.getTime()) / 3600000).toFixed(1)} {t('Stunden')}
                   </span>
                 </div>
               )}
@@ -284,7 +317,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
               <div className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
                   <Repeat className="w-4 h-4 text-text-secondary" />
-                  <span className="text-sm font-semibold text-text-primary">Wiederkehrend</span>
+                  <span className="text-sm font-semibold text-text-primary">{t('Wiederkehrend')}</span>
                 </div>
                 <button
                   type="button"
@@ -310,7 +343,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                   {/* Frequency */}
                   <div>
                     <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
-                      Wiederholung
+                      {t('Wiederholung')}
                     </label>
                     <div className="flex gap-2">
                       {(['weekly', 'biweekly', 'monthly'] as const).map((f) => (
@@ -325,7 +358,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                               : 'border-border text-text-secondary hover:border-border/60',
                           )}
                         >
-                          {f === 'weekly' ? 'Wöchentlich' : f === 'biweekly' ? '2-wöchentlich' : 'Monatlich'}
+                          {t(f === 'weekly' ? 'Wöchentlich' : f === 'biweekly' ? '2-wöchentlich' : 'Monatlich')}
                         </button>
                       ))}
                     </div>
@@ -334,7 +367,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                   {/* Occurrence count */}
                   <div>
                     <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wide">
-                      Anzahl Termine
+                      {t('Anzahl Termine')}
                     </label>
                     <div className="flex items-center gap-3">
                       <button
@@ -354,7 +387,7 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                       >
                         +
                       </button>
-                      <span className="text-xs text-text-tertiary">Termine gesamt</span>
+                      <span className="text-xs text-text-tertiary">{t('Termine gesamt')}</span>
                     </div>
                   </div>
                 </div>
@@ -363,12 +396,12 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
               {/* Notes */}
               <div>
                 <label className="block text-sm font-semibold text-text-primary mb-1.5">
-                  Notizen (optional)
+                  {t('Notizen (optional)')}
                 </label>
                 <textarea
                   className="input-base resize-none"
                   rows={2}
-                  placeholder="Kurze Notiz…"
+                  placeholder={t('Kurze Notiz…')}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
@@ -382,10 +415,10 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                 disabled={loading || selectedRooms.length === 0}
               >
                 {loading
-                  ? 'Bitte warten…'
+                  ? t('Bitte warten…')
                   : recurring
-                    ? `${recurrenceCount} Termine buchen`
-                    : 'Buchen'}
+                    ? t('{n} Termine buchen', { n: recurrenceCount })
+                    : t('Buchen')}
               </button>
             </div>
           </form>

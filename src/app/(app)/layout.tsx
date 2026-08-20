@@ -48,6 +48,8 @@ function MaintenanceScreen({ until }: { until: Date | null }) {
         Wartungsmodus{countdown ? `: noch ${countdown}` : ''}
       </p>
       <p className="text-base text-text-secondary">Bald wieder für dich da!</p>
+      <p className="text-base text-text-secondary">Currently updating, back in a bit!</p>
+
     </div>
   );
 }
@@ -93,7 +95,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh bg-surface-2 flex flex-col">
+    <div className="h-dvh bg-surface-2 flex flex-col">
       <TopBar profile={profile} />
       <main className="flex-1 content-area overflow-y-auto">
         {children}

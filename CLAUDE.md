@@ -62,7 +62,7 @@ firebase.json
 | Room | ID | Area | Color (hex) |
 |---|---|---|---|
 | Songbird | songbird | 38 m² | `#F1C40F` (yellow) |
-| Heros | heros | 23 m² | `#74B9FF` (light blue) |
+| Believe | heros | 23 m² | `#74B9FF` (light blue) |
 | Unstoppable | unstoppable | 19 m² | `#A29BFE` (purple) |
 | Imagine | imagine | 56 m² | `#00B894` (grass green) |
 
@@ -88,7 +88,7 @@ Main-Master  (elias@musikschafferei.at · elias@musicmaker.studio · p.strohbach
 - Bottom nav: Buchung · Lager · Nutzungsbedingungen · Support (+ Verwaltung for Master+)
 - Booking slots: 15 min granularity, min 1 h, default suggest 2 h
 - Collision error (German): "Bitte um Verzeihung, aber da hat sich grade jemand direkt vor dir eingebucht"
-- Double booking same user: "Bitte Kontakt mit Elias aufnehmen"
+- Double booking same user (different rooms, overlapping time): allowed, not blocked. A `doppelbuchung` support ticket is auto-created and pushed to Admin/Master/Main-Master; only an admin can accept (booking stays) or decline (booking is cancelled) it.
 - Schüler restricted message: "Diese Funktion ist nur für Studio- und Proberaumnutzer verfügbar."
 - Border radius: 12 px everywhere
 - Max 2 font size steps per screen

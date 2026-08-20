@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Calendar, Package, FileText, MessageSquare, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { hasRole } from '@/lib/utils/roleUtils';
+import { useT } from '@/lib/hooks/useTranslation';
 import type { UserRole } from '@/lib/utils/constants';
 
 interface NavItem {
@@ -24,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function BottomNav({ role }: { role: UserRole }) {
   const pathname = usePathname();
+  const t = useT();
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.minRole || hasRole(role, item.minRole),
@@ -51,7 +53,7 @@ export function BottomNav({ role }: { role: UserRole }) {
                 active && 'scale-110',
               )}
             />
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <span className="text-[10px] font-medium">{t(item.label)}</span>
           </Link>
         );
       })}

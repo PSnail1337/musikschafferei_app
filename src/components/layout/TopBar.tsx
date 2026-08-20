@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Bell, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/lib/hooks/useTranslation';
 import type { UserProfile } from '@/lib/models/user';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -17,6 +18,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function TopBar({ profile }: { profile: UserProfile | null }) {
   const pathname = usePathname();
+  const t = useT();
 
   // Find best matching title (longest matching prefix)
   const title = Object.entries(PAGE_TITLES)
@@ -33,18 +35,18 @@ export function TopBar({ profile }: { profile: UserProfile | null }) {
             <button
               onClick={() => history.back()}
               className="btn-ghost p-2 -ml-2"
-              aria-label="Zurück"
+              aria-label={t('Zurück')}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
           <h1 className={cn('font-semibold text-text-primary', isRoot ? 'text-lg' : 'text-base')}>
-            {title}
+            {t(title)}
           </h1>
         </div>
 
         <div className="flex items-center gap-1">
-          <Link href="/settings" aria-label="Einstellungen">
+          <Link href="/settings" aria-label={t('Einstellungen')}>
             {profile?.photoURL ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Users, Star, BarChart2, FileOutput, Settings, Shield,
+  Users, Star, BarChart2, FileOutput, Settings, Shield, Calendar,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { isMaster, isMainMaster } from '@/lib/utils/roleUtils';
@@ -38,6 +38,14 @@ export default function AdminPage() {
       label:   'Kontingente & Abrechnung',
       desc:    'Jahresstunden, Lehrer-Abrechnung, Sondermitglieder',
       color:   '#00B894',
+      visible: true,
+    },
+    {
+      href:    '/admin/bookings',
+      icon:    Calendar,
+      label:   'Buchungen',
+      desc:    'Alle Buchungen durchsuchen',
+      color:   '#5c67f2',
       visible: true,
     },
     {

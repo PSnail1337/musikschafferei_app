@@ -139,6 +139,12 @@ service cloud.firestore {
       allow write: if isMainMaster();
     }
 
+    // ─── band_quotas ──────────────────────────────────────────
+    match /band_quotas/{bandName} {
+      allow read:  if isSignedIn();   // needed client-side for the quota check on booking create
+      allow write: if isMainMaster();
+    }
+
     // ─── app_config ───────────────────────────────────────────
     match /app_config/{docId} {
       allow read:  if isSignedIn();

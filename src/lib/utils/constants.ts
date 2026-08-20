@@ -25,15 +25,19 @@ export const ROOMS: readonly {
   textColor: string;
 }[] = [
   { id: 'songbird',    name: 'Songbird',    area: 38, color: '#F1C40F', textColor: '#78560a' },
-  { id: 'heros',       name: 'Heros',       area: 23, color: '#74B9FF', textColor: '#1a4d8a' },
+  { id: 'heros',       name: 'Believe',     area: 23, color: '#74B9FF', textColor: '#1a4d8a' },
   { id: 'unstoppable', name: 'Unstoppable', area: 19, color: '#A29BFE', textColor: '#3d2f8a' },
   { id: 'imagine',     name: 'Imagine',     area: 56, color: '#00B894', textColor: '#004d3a' },
 ];
 
 export type RoomId = 'songbird' | 'heros' | 'unstoppable' | 'imagine';
 
-// Studio combo: only bookable by Master+
+// Studio combo: only bookable by Master+, no approval needed
 export const STUDIO_COMBO_ROOMS: RoomId[] = ['heros', 'unstoppable'];
+
+// Imagine + Believe combo: bookable by anyone, but always needs admin approval
+// via a support ticket (see createBooking / BookingCreateSheet)
+export const IMAGINE_HEROS_COMBO_ROOMS: RoomId[] = ['imagine', 'heros'];
 
 // ─── User roles & types ────────────────────────────────────────
 export const USER_ROLES = ['main-master', 'master', 'admin', 'mitglied'] as const;
@@ -57,8 +61,15 @@ export const MAX_ADMINS    = 30;  // per Master
 export const TICKET_STATUSES = ['new', 'read', 'in-progress', 'done'] as const;
 export type TicketStatus = typeof TICKET_STATUSES[number];
 
-export const TICKET_TYPES = ['feedback', 'reklamation'] as const;
+// 'doppelbuchung' is system-generated only (cross-room double booking pending admin approval)
+export const TICKET_TYPES = ['feedback', 'reklamation', 'doppelbuchung'] as const;
 export type TicketType = typeof TICKET_TYPES[number];
+
+export const TICKET_TYPE_LABELS: Record<TicketType, string> = {
+  feedback:      'Feedback',
+  reklamation:   'Reklamation',
+  doppelbuchung: 'Doppelbuchung',
+};
 
 // ─── Inventory ────────────────────────────────────────────────
 export const INVENTORY_REF_PREFIX = 'ART-';
@@ -85,7 +96,7 @@ export const DEFAULT_LOCALE: Locale = 'de';
 
 // Fields / names that are NEVER translated
 export const TRANSLATION_EXCLUSIONS = [
-  'Songbird', 'Heros', 'Unstoppable', 'Imagine', // room names
+  'Songbird', 'Believe', 'Unstoppable', 'Imagine', // room names
   'Winterhafen', 'Linz', 'GMK-Center',             // location names
   'Musikschafferei',
 ];
@@ -93,7 +104,7 @@ export const TRANSLATION_EXCLUSIONS = [
 // ─── German UX strings (collision, restricted) ────────────────
 export const MSG_COLLISION =
   'Bitte um Verzeihung, aber da hat sich grade jemand direkt vor dir eingebucht.';
-export const MSG_DOUBLE_BOOKING =
-  'Bitte Kontakt mit Elias aufnehmen.';
 export const MSG_SCHUELER_RESTRICTED =
   'Diese Funktion ist nur für Studio- und Proberaumnutzer verfügbar.';
+export const MSG_BAND_QUOTA_EXCEEDED =
+  'Das Jahreskontingent dieser Band ist erschöpft. Bitte Kontakt mit der Verwaltung aufnehmen.';

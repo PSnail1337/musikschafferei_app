@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Globe, Bell, BellOff, LogOut, User, Shield, Check } from 'lucide-react';
+import { Moon, Sun, Globe, Bell, BellOff, LogOut, User, Shield, Check, Calendar, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -11,6 +12,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { ROLE_LABELS, TYPE_LABELS } from '@/lib/utils/roleUtils';
 import { SUPPORTED_LOCALES } from '@/lib/utils/constants';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/lib/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -18,6 +20,7 @@ export default function SettingsPage() {
   const profile    = useAuthStore((s) => s.profile);
   const { theme, locale, notificationsOn, setTheme, setLocale, setNotifications }
     = useSettingsStore();
+  const t = useT();
 
   const [signingOut, setSigningOut]   = useState(false);
   const [bandName, setBandName]       = useState('');
@@ -35,9 +38,9 @@ export default function SettingsPage() {
         bandName: bandName.trim(),
         updatedAt: serverTimestamp(),
       });
-      toast.success('Bandname gespeichert.');
+      toast.success(t('Bandname gespeichert.'));
     } catch {
-      toast.error('Speichern fehlgeschlagen.');
+      toast.error(t('Speichern fehlgeschlagen.'));
     } finally {
       setSavingBand(false);
     }
@@ -51,24 +54,24 @@ export default function SettingsPage() {
 
   const sections = [
     {
-      title: 'Erscheinungsbild',
+      title: t('Erscheinungsbild'),
       items: [
         {
-          label: 'Design',
+          label: t('Design'),
           control: (
             <div className="flex gap-1">
-              {(['light', 'dark', 'system'] as const).map((t) => (
+              {(['light', 'dark', 'system'] as const).map((themeOption) => (
                 <button
-                  key={t}
-                  onClick={() => setTheme(t)}
+                  key={themeOption}
+                  onClick={() => setTheme(themeOption)}
                   className={cn(
                     'px-3 py-1.5 rounded-[8px] text-xs font-medium border transition-all',
-                    theme === t
+                    theme === themeOption
                       ? 'border-brand-500 bg-brand-500/10 text-brand-500'
                       : 'border-border text-text-secondary',
                   )}
                 >
-                  {t === 'light' ? 'Hell' : t === 'dark' ? 'Dunkel' : 'System'}
+                  {t(themeOption === 'light' ? 'Hell' : themeOption === 'dark' ? 'Dunkel' : 'System')}
                 </button>
               ))}
             </div>
@@ -77,10 +80,10 @@ export default function SettingsPage() {
       ],
     },
     {
-      title: 'Sprache & Übersetzung',
+      title: t('Sprache & Übersetzung'),
       items: [
         {
-          label: 'Sprache',
+          label: t('Sprache'),
           control: (
             <div className="flex gap-1">
               {SUPPORTED_LOCALES.map((l) => (
@@ -103,11 +106,11 @@ export default function SettingsPage() {
       ],
     },
     {
-      title: 'Benachrichtigungen',
+      title: t('Benachrichtigungen'),
       items: [
         {
-          label: 'Push-Benachrichtigungen',
-          sublabel: 'Buchungserinnerungen, Ticket-Updates',
+          label: t('Push-Benachrichtigungen'),
+          sublabel: t('Buchungserinnerungen, Ticket-Updates'),
           control: (
             <button
               onClick={() => setNotifications(!notificationsOn)}
@@ -155,13 +158,13 @@ export default function SettingsPage() {
           {/* Band name */}
           <div className="border-t border-border pt-3 space-y-1.5">
             <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
-              Bandname / Künstlername
+              {t('Bandname / Künstlername')}
             </p>
             <div className="flex gap-2">
               <input
                 type="text"
                 className="input-base flex-1 text-sm"
-                placeholder="z.B. The Rockets"
+                placeholder={t('z.B. The Rockets')}
                 value={bandName}
                 onChange={(e) => setBandName(e.target.value)}
               />
@@ -176,8 +179,20 @@ export default function SettingsPage() {
                 {savingBand ? '…' : 'OK'}
               </button>
             </div>
-            <p className="text-xs text-text-tertiary">Erscheint im Buchungskalender anstelle deines Namens.</p>
+            <p className="text-xs text-text-tertiary">{t('Erscheint im Buchungskalender anstelle deines Namens.')}</p>
           </div>
+
+          {/* My bookings */}
+          <Link
+            href="/settings/bookings"
+            className="flex items-center justify-between border-t border-border pt-3 -mb-1 group"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-text-primary">
+              <Calendar className="w-4 h-4 text-text-tertiary" />
+              {t('Meine Buchungen')}
+            </span>
+            <ChevronRight className="w-4 h-4 text-text-tertiary group-hover:translate-x-0.5 transition-transform" />
+          </Link>
         </div>
       )}
 
@@ -212,7 +227,7 @@ export default function SettingsPage() {
         className="btn-danger w-full"
       >
         <LogOut className="w-4 h-4" />
-        {signingOut ? 'Abmelden…' : 'Abmelden'}
+        {signingOut ? t('Abmelden…') : t('Abmelden')}
       </button>
 
       <p className="text-center text-xs text-text-tertiary pb-4">

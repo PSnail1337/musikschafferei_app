@@ -22,7 +22,7 @@
 - [x] **Step 9** — Booking flow: slot selection → confirm sheet → write to Firestore + real-time collision detection
 - [x] **Step 10** — Push notifications via FCM: 10 min before start (alarm off), 10 min before end (alarm on), >5 h booking alert to Master
 - [x] **Step 11** — Cancellation logic: 24 h window (configurable per user by Master), Master override
-- [x] **Step 12** — Studio combo booking (Heros + Unstoppable), Master-only access
+- [x] **Step 12** — Studio combo booking (Believe + Unstoppable), Master-only access
 
 ## Phase 3 — Inventory · Terms · Support
 

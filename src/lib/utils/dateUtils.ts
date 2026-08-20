@@ -11,6 +11,29 @@ export function getDateFnsLocale(locale: Locale) {
   return locale === 'de' ? de : enUS;
 }
 
+/** Full weekday+date, e.g. "Donnerstag, 20. August 2026" / "Thursday, August 20, 2026" */
+export function formatLocalizedDate(date: Date, locale: Locale): string {
+  const pattern = locale === 'de' ? 'EEEE, d. MMMM yyyy' : 'EEEE, MMMM d, yyyy';
+  return format(date, pattern, { locale: getDateFnsLocale(locale) });
+}
+
+/** Short date, e.g. "20. Aug. 2026" / "Aug 20, 2026" */
+export function formatLocalizedShortDate(date: Date, locale: Locale): string {
+  const pattern = locale === 'de' ? 'd. MMM yyyy' : 'MMM d, yyyy';
+  return format(date, pattern, { locale: getDateFnsLocale(locale) });
+}
+
+/** Month + year for calendar headers, e.g. "August 2026" (same token order in both locales) */
+export function formatLocalizedMonthYear(date: Date, locale: Locale): string {
+  return format(date, 'MMMM yyyy', { locale: getDateFnsLocale(locale) });
+}
+
+/** Short date + time, e.g. "20. Aug. 14:30" / "Aug 20, 14:30" */
+export function formatLocalizedShortDateTime(date: Date, locale: Locale): string {
+  const pattern = locale === 'de' ? 'd. MMM HH:mm' : 'MMM d, HH:mm';
+  return format(date, pattern, { locale: getDateFnsLocale(locale) });
+}
+
 // ─── Slot helpers ─────────────────────────────────────────────
 /** Build time-slot labels for the calendar grid (e.g. "08:00", "08:15", …) */
 export function buildTimeSlots(startHour = 6, endHour = 24, slotMinutes = 15): Date[] {

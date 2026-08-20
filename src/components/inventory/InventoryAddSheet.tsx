@@ -6,6 +6,7 @@ import { X, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createInventoryItem, getDropdowns } from '@/lib/services/inventoryService';
 import { useAuthStore } from '@/store/authStore';
+import { useT } from '@/lib/hooks/useTranslation';
 
 interface Props {
   onClose:   () => void;
@@ -14,6 +15,7 @@ interface Props {
 
 export function InventoryAddSheet({ onClose, onCreated }: Props) {
   const profile = useAuthStore((s) => s.profile);
+  const t = useT();
 
   const [name, setName]           = useState('');
   const [description, setDesc]    = useState('');
@@ -52,12 +54,12 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
         location:   { room, storage: storageArea, shelf },
         createdBy:  profile.uid,
       });
-      toast.success('Artikel hinzugefügt!');
+      toast.success(t('Artikel hinzugefügt!'));
       onCreated();
     } catch (err) {
       const code = (err as { code?: string }).code ?? 'unknown';
       console.error('[Inventory] createInventoryItem failed:', code, err);
-      toast.error(`Fehler: ${code}`, { duration: 6000 });
+      toast.error(t('Fehler: {code}', { code }), { duration: 6000 });
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
             <div className="w-10 h-1 rounded-full bg-border" />
           </div>
           <div className="flex items-center justify-between px-5 pb-4 border-b border-border">
-            <h2 className="text-lg font-bold text-text-primary">Artikel hinzufügen</h2>
+            <h2 className="text-lg font-bold text-text-primary">{t('Artikel hinzufügen')}</h2>
             <button onClick={onClose} className="btn-ghost p-2"><X className="w-5 h-5" /></button>
           </div>
 
@@ -92,16 +94,16 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
             {/* Photo upload */}
             <div>
               <label className="block text-sm font-semibold text-text-primary mb-2">
-                Foto (optional)
+                {t('Foto (optional)')}
               </label>
               <label className="flex flex-col items-center justify-center w-full h-32 rounded-[12px] border-2 border-dashed border-border bg-surface-2 cursor-pointer hover:border-brand-500 transition-colors overflow-hidden">
                 {photoPreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoPreview} alt="Vorschau" className="w-full h-full object-cover" />
+                  <img src={photoPreview} alt={t('Vorschau')} className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-text-tertiary">
                     <Upload className="w-6 h-6" />
-                    <span className="text-xs">Bild auswählen</span>
+                    <span className="text-xs">{t('Bild auswählen')}</span>
                   </div>
                 )}
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
@@ -114,12 +116,12 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">Beschreibung</label>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('Beschreibung')}</label>
               <textarea className="input-base resize-none" rows={2} value={description} onChange={(e) => setDesc(e.target.value)} />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-text-primary mb-1.5">Menge *</label>
+              <label className="block text-sm font-semibold text-text-primary mb-1.5">{t('Menge *')}</label>
               <input type="number" min={0} className="input-base" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} required />
             </div>
 
@@ -128,7 +130,7 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
               {(['rooms', 'storage', 'shelves'] as const).map((key) => (
                 <div key={key}>
                   <label className="block text-xs font-medium text-text-secondary mb-1 capitalize">
-                    {key === 'rooms' ? 'Raum' : key === 'storage' ? 'Lagerort' : 'Regal'}
+                    {t(key === 'rooms' ? 'Raum' : key === 'storage' ? 'Lagerort' : 'Regal')}
                   </label>
                   <select
                     className="input-base text-sm"
@@ -151,7 +153,7 @@ export function InventoryAddSheet({ onClose, onCreated }: Props) {
           </div>
           <div className="px-5 py-4 border-t border-border">
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Speichern…' : 'Artikel speichern'}
+              {loading ? t('Speichern…') : t('Artikel speichern')}
             </button>
           </div>
           </form>

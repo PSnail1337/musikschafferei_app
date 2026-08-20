@@ -28,6 +28,23 @@
       ]
     },
     {
+      "collectionGroup": "buchungen",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "bandName",  "order": "ASCENDING" },
+        { "fieldPath": "cancelled", "order": "ASCENDING" },
+        { "fieldPath": "startTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "buchungen",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId",    "order": "ASCENDING" },
+        { "fieldPath": "startTime", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "support_tickets",
       "queryScope": "COLLECTION",
       "fields": [

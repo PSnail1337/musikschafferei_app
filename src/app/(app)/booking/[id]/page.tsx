@@ -6,11 +6,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { cancelBooking } from '@/lib/services/bookingService';
 import { useAuthStore } from '@/store/authStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { isAdmin } from '@/lib/utils/roleUtils';
 import type { Booking } from '@/lib/models/booking';
 import { ROOMS } from '@/lib/utils/constants';
 import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { formatLocalizedDate } from '@/lib/utils/dateUtils';
 import { Calendar, Clock, MapPin, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import toast from 'react-hot-toast';
@@ -20,6 +21,7 @@ export default function BookingDetailPage() {
   const router   = useRouter();
   const profile  = useAuthStore((s) => s.profile);
   const fbUser   = useAuthStore((s) => s.firebaseUser);
+  const locale   = useSettingsStore((s) => s.locale);
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,7 @@ const rooms = ROOMS.filter((r) => (booking.roomIds as string[]).includes(r.id));
           <div>
             <p className="text-xs text-text-tertiary">Datum</p>
             <p className="text-sm font-semibold text-text-primary">
-              {format(booking.startTime.toDate(), 'EEEE, d. MMMM yyyy', { locale: de })}
+              {formatLocalizedDate(booking.startTime.toDate(), locale)}
             </p>
           </div>
         </div>

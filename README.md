@@ -38,7 +38,7 @@ Live: [musicmaker.studio](https://musicmaker.studio)
 | Room | Area | Color |
 |---|---|---|
 | Songbird | 38 m² | #F1C40F (yellow) |
-| Heros | 23 m² | #74B9FF (light blue) |
+| Believe | 23 m² | #74B9FF (light blue) |
 | Unstoppable | 19 m² | #A29BFE (purple) |
 | Imagine | 56 m² | #00B894 (grass green) |
 

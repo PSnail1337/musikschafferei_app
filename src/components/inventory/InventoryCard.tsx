@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Package, Edit2, ChevronRight } from 'lucide-react';
 import type { InventoryItem } from '@/lib/models/inventory';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/lib/hooks/useTranslation';
 
 interface Props {
   item:      InventoryItem;
@@ -15,6 +16,7 @@ interface Props {
 
 export function InventoryCard({ item, canEdit, onRefresh }: Props) {
   const router = useRouter();
+  const t = useT();
 
   return (
     <div
@@ -50,18 +52,18 @@ export function InventoryCard({ item, canEdit, onRefresh }: Props) {
                 : 'bg-danger/10 text-danger',
             )}
           >
-            Menge: {item.quantity}
+            {t('Menge: {n}', { n: item.quantity })}
           </span>
           {item.lentTo && (
             <span className="badge text-[9px] bg-warning/10 text-warning">
-              ausgeliehen
+              {t('ausgeliehen')}
             </span>
           )}
         </div>
         <p className="text-sm font-semibold text-text-primary truncate">{item.name}</p>
         {item.lentTo ? (
           <p className="text-xs text-warning truncate mt-0.5">
-            bei {item.lentTo.displayName}
+            {t('bei {name}', { name: item.lentTo.displayName })}
           </p>
         ) : (
           <p className="text-xs text-text-tertiary truncate mt-0.5">

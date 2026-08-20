@@ -10,9 +10,11 @@ import type { InventoryItem } from '@/lib/models/inventory';
 import { InventoryCard } from '@/components/inventory/InventoryCard';
 import { InventoryAddSheet } from '@/components/inventory/InventoryAddSheet';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/lib/hooks/useTranslation';
 
 export default function InventoryPage() {
   const profile  = useAuthStore((s) => s.profile);
+  const t        = useT();
   const [items, setItems]     = useState<InventoryItem[]>([]);
   const [query, setQuery]     = useState('');
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export default function InventoryPage() {
           <Package className="w-8 h-8 text-text-tertiary" />
         </div>
         <p className="text-sm text-text-secondary max-w-xs">
-          Die Lager-Funktion ist bald für dich da!
+          {t('Die Lager-Funktion ist bald für dich da!')}
         </p>
       </div>
     );
@@ -83,7 +85,7 @@ export default function InventoryPage() {
         <input
           type="search"
           className="input-base pl-10"
-          placeholder="Suche nach Artikel, Beschreibung, Raum…"
+          placeholder={t('Suche nach Artikel, Beschreibung, Raum…')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -92,7 +94,7 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-text-secondary">
-          {loading ? 'Lade…' : `${items.length} Artikel`}
+          {loading ? t('Lade…') : t('{n} Artikel', { n: items.length })}
         </p>
         {canAdd && (
           <button
@@ -100,7 +102,7 @@ export default function InventoryPage() {
             className="btn-primary py-2 px-3 text-sm"
           >
             <Plus className="w-4 h-4" />
-            Hinzufügen
+            {t('Hinzufügen')}
           </button>
         )}
       </div>
@@ -116,7 +118,7 @@ export default function InventoryPage() {
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <Package className="w-10 h-10 text-text-tertiary" />
           <p className="text-sm text-text-secondary">
-            {query ? 'Keine Ergebnisse gefunden.' : 'Noch keine Artikel vorhanden.'}
+            {t(query ? 'Keine Ergebnisse gefunden.' : 'Noch keine Artikel vorhanden.')}
           </p>
         </div>
       ) : (

@@ -18,6 +18,8 @@ export interface CreateTicketInput {
   type:      TicketType;
   message:   string;
   voiceBlob?: Blob | null;
+  /** Only for type 'doppelbuchung' — the new booking to cancel if the admin declines */
+  linkedBookingIds?: string[];
 }
 
 export async function createTicket(input: CreateTicketInput): Promise<string> {
@@ -44,7 +46,17 @@ export async function createTicket(input: CreateTicketInput): Promise<string> {
     createdAt:   serverTimestamp(),
     updatedAt:   serverTimestamp(),
     statusHistory: [],
+    ...(input.type === 'doppelbuchung'
+      ? { linkedBookingIds: input.linkedBookingIds ?? [], approvalStatus: 'pending' }
+      : {}),
   });
+
+  // Notify admins/masters — fire and forget, non-critical
+  fetch('/api/notifications/ticket', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ ticketId: docRef.id }),
+  }).catch(() => {});
 
   return docRef.id;
 }
@@ -66,6 +78,28 @@ export async function updateTicketStatus(
 
   await updateDoc(doc(db, COL, ticketId), {
     status:        newStatus,
+    updatedAt:     serverTimestamp(),
+    statusHistory: arrayUnion(event),
+  });
+}
+
+// ─── Doppelbuchung approval ─────────────────────────────────────
+
+export async function updateTicketApproval(
+  ticketId: string,
+  approvalStatus: 'accepted' | 'declined',
+  changedBy: string,
+): Promise<void> {
+  const event: TicketStatusEvent = {
+    status:    'done',
+    changedBy,
+    changedAt: Timestamp.now(),
+    note:      approvalStatus === 'accepted' ? 'Doppelbuchung akzeptiert' : 'Doppelbuchung abgelehnt',
+  };
+
+  await updateDoc(doc(db, COL, ticketId), {
+    approvalStatus,
+    status:        'done',
     updatedAt:     serverTimestamp(),
     statusHistory: arrayUnion(event),
   });
