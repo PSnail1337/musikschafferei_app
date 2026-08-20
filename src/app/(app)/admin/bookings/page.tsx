@@ -134,7 +134,10 @@ export default function AdminBookingsPage() {
               <button
                 key={booking.id}
                 onClick={() => setSelected(booking)}
-                className="card p-4 w-full flex items-center gap-3 text-left hover:shadow-card-md transition-shadow"
+                className={cn(
+                  'card p-4 w-full flex items-center gap-3 text-left hover:shadow-card-md transition-shadow',
+                  booking.pendingApproval && 'border-2 border-dashed border-warning',
+                )}
               >
                 <div
                   className="w-3 h-3 rounded-full flex-shrink-0"
@@ -147,6 +150,7 @@ export default function AdminBookingsPage() {
                   <p className="text-xs text-text-tertiary truncate">
                     {formatLocalizedShortDateTime(booking.startTime.toDate(), locale)} ·{' '}
                     {booking.bandName || booking.userName}
+                    {booking.pendingApproval && <span className="ml-2 text-warning">⏳ Wartet auf Freigabe</span>}
                   </p>
                 </div>
               </button>

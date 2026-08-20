@@ -17,6 +17,8 @@ export interface Booking {
   notes:       string;
   /** true if this was a studio combo (Believe + Unstoppable) */
   isCombo:     boolean;
+  /** true for a multi-room combo booking not yet accepted by an admin (see the linked 'doppelbuchung' ticket) */
+  pendingApproval: boolean;
   /** Notification tasks already dispatched */
   notifiedStart: boolean;
   notifiedEnd:   boolean;

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronRight, Mic, MessageSquare, Check, X } from 'lucide-react';
 import { updateTicketStatus, updateTicketApproval } from '@/lib/services/supportService';
-import { cancelBooking } from '@/lib/services/bookingService';
+import { cancelBooking, approveBooking } from '@/lib/services/bookingService';
 import { useAuthStore } from '@/store/authStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { TICKET_STATUSES, TICKET_TYPE_LABELS } from '@/lib/utils/constants';
@@ -40,9 +40,11 @@ export function TicketCard({ ticket, canManage, onRefresh }: Props) {
     if (!profile) return;
     setUpdating(true);
     try {
-      if (approvalStatus === 'declined') {
-        for (const bookingId of ticket.linkedBookingIds ?? []) {
+      for (const bookingId of ticket.linkedBookingIds ?? []) {
+        if (approvalStatus === 'declined') {
           await cancelBooking(bookingId, profile.uid);
+        } else {
+          await approveBooking(bookingId);
         }
       }
       await updateTicketApproval(ticket.id, approvalStatus, profile.uid);

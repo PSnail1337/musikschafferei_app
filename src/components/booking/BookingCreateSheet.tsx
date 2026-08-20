@@ -25,11 +25,10 @@ type RecurrenceFreq = 'weekly' | 'biweekly' | 'monthly';
 interface Props {
   defaultRoomId?:    string;
   defaultStartTime?: Date;
-  canCombo:          boolean;
   onClose:           () => void;
 }
 
-export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, onClose }: Props) {
+export function BookingCreateSheet({ defaultRoomId, defaultStartTime, onClose }: Props) {
   const profile = useAuthStore((s) => s.profile);
   const fbUser  = useAuthStore((s) => s.firebaseUser);
   const locale  = useSettingsStore((s) => s.locale);
@@ -261,21 +260,19 @@ export function BookingCreateSheet({ defaultRoomId, defaultStartTime, canCombo, 
                   })}
                 </div>
 
-                {canCombo && (
-                  <button
-                    type="button"
-                    onClick={toggleCombo}
-                    className={cn(
-                      'mt-2 w-full flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all',
-                      isCombo ? 'border-brand-500 bg-brand-500/10' : 'border-dashed border-border',
-                    )}
-                  >
-                    <Info className="w-4 h-4 text-brand-500 flex-shrink-0" />
-                    <span className="text-xs font-medium text-text-primary">
-                      {t('Studio Combo (Believe + Unstoppable) — benötigt Freigabe durch Admin')}
-                    </span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={toggleCombo}
+                  className={cn(
+                    'mt-2 w-full flex items-center gap-2 rounded-[10px] px-3 py-2.5 border-2 transition-all',
+                    isCombo ? 'border-brand-500 bg-brand-500/10' : 'border-dashed border-border',
+                  )}
+                >
+                  <Info className="w-4 h-4 text-brand-500 flex-shrink-0" />
+                  <span className="text-xs font-medium text-text-primary">
+                    {t('Studio Combo (Believe + Unstoppable) — benötigt Freigabe durch Admin')}
+                  </span>
+                </button>
 
                 <button
                   type="button"

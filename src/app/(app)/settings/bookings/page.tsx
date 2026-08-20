@@ -62,6 +62,7 @@ export default function MyBookingsPage() {
                 className={cn(
                   'card p-4 w-full flex items-center gap-3 text-left hover:shadow-card-md transition-shadow',
                   booking.cancelled && 'opacity-50',
+                  booking.pendingApproval && !booking.cancelled && 'border-2 border-dashed border-warning',
                 )}
               >
                 <div
@@ -75,6 +76,7 @@ export default function MyBookingsPage() {
                   <p className="text-xs text-text-tertiary">
                     {formatLocalizedShortDateTime(booking.startTime.toDate(), locale)}
                     {booking.cancelled && <span className="ml-2 text-danger">{t('Storniert')}</span>}
+                    {booking.pendingApproval && !booking.cancelled && <span className="ml-2 text-warning">⏳ {t('Wartet auf Freigabe durch Admin')}</span>}
                   </p>
                 </div>
               </button>

@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { subscribeBookingsForDay } from '@/lib/services/bookingService';
-import { useAuthStore } from '@/store/authStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { isMaster } from '@/lib/utils/roleUtils';
 import { formatLocalizedDate } from '@/lib/utils/dateUtils';
 import { useT } from '@/lib/hooks/useTranslation';
 import type { Booking } from '@/lib/models/booking';
@@ -17,7 +15,6 @@ import { BookingDetailSheet } from '@/components/booking/BookingDetailSheet';
 import { DatePickerSheet } from '@/components/booking/DatePickerSheet';
 
 export default function BookingPage() {
-  const profile    = useAuthStore((s) => s.profile);
   const locale     = useSettingsStore((s) => s.locale);
   const t          = useT();
   const [date, setDate]       = useState<Date>(startOfDay(new Date()));
@@ -46,7 +43,6 @@ export default function BookingPage() {
   function nextDay() { setDate((d) => addDays(d, 1)); }
 
   const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-  const canCombo = profile ? isMaster(profile.role) : false;
 
   return (
     <div className="flex flex-col h-full">
@@ -91,7 +87,6 @@ export default function BookingPage() {
           <CalendarLandscape
             date={date}
             bookings={bookings}
-            canCombo={canCombo}
             onSlotClick={(roomId, startTime) => setShowCreate({ roomId, startTime })}
             onBookingClick={setSelectedBooking}
           />
@@ -119,7 +114,6 @@ export default function BookingPage() {
         <BookingCreateSheet
           defaultRoomId={showCreate.roomId}
           defaultStartTime={showCreate.startTime}
-          canCombo={canCombo}
           onClose={() => setShowCreate(null)}
         />
       )}

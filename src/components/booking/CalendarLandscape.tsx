@@ -3,12 +3,12 @@
 import { useRef } from 'react';
 import { format } from 'date-fns';
 import { ROOMS, SLOT_MINUTES } from '@/lib/utils/constants';
+import { cn } from '@/lib/utils/cn';
 import type { Booking } from '@/lib/models/booking';
 
 interface Props {
   date:           Date;
   bookings:       Booking[];
-  canCombo:       boolean;
   onSlotClick:    (roomId: string, startTime: Date) => void;
   onBookingClick: (booking: Booking) => void;
 }
@@ -18,7 +18,7 @@ const END_HOUR    = 24;
 const HOUR_PX     = 60;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 
-export function CalendarLandscape({ date, bookings, canCombo, onSlotClick, onBookingClick }: Props) {
+export function CalendarLandscape({ date, bookings, onSlotClick, onBookingClick }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const hours: string[] = [];
@@ -119,11 +119,15 @@ export function CalendarLandscape({ date, bookings, canCombo, onSlotClick, onBoo
                   return (
                     <div
                       key={booking.id}
-                      className="absolute inset-x-0.5 rounded-[8px] px-2 py-1 overflow-hidden cursor-default"
+                      className={cn(
+                        'absolute inset-x-0.5 rounded-[8px] px-2 py-1 overflow-hidden cursor-default',
+                        booking.pendingApproval && 'border-2 border-dashed',
+                      )}
                       style={{
                         top,
                         height,
-                        backgroundColor: room.color,
+                        backgroundColor: booking.pendingApproval ? room.color + '40' : room.color,
+                        borderColor:     booking.pendingApproval ? room.textColor : undefined,
                         color:           room.textColor,
                       }}
                       onClick={(e) => { e.stopPropagation(); onBookingClick(booking); }}
@@ -131,6 +135,7 @@ export function CalendarLandscape({ date, bookings, canCombo, onSlotClick, onBoo
                       <p className="text-[10px] font-bold truncate">{booking.bandName || booking.userName}</p>
                       <p className="text-[9px] opacity-80">
                         {format(startDate, 'HH:mm')}–{format(endDate, 'HH:mm')}
+                        {booking.pendingApproval && ' · ⏳'}
                       </p>
                     </div>
                   );

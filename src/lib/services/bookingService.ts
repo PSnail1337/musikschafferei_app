@@ -168,8 +168,10 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateBo
   let needsApprovalRoomIds: RoomId[] = [];
 
   // Booking 2+ rooms at once (any combo, including Studio Combo) is allowed,
-  // but always needs admin sign-off
-  if (roomIds.length > 1) {
+  // but always needs admin sign-off — held as "pending" (dashed in the UI)
+  // until an admin accepts the linked ticket
+  const isPendingCombo = roomIds.length > 1;
+  if (isPendingCombo) {
     needsApprovalRoomIds = [...roomIds];
   }
 
@@ -222,6 +224,7 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateBo
     durationMin,
     notifiedStart: false,
     notifiedEnd:   false,
+    pendingApproval: isPendingCombo,
     cancelled:     false,
     cancelledAt:   null,
     cancelledBy:   null,
@@ -243,6 +246,14 @@ export async function cancelBooking(
     cancelledAt: serverTimestamp(),
     cancelledBy: cancelledByUid,
     updatedAt:   serverTimestamp(),
+  });
+}
+
+/** Clears the pending-approval flag once an admin accepts the linked ticket */
+export async function approveBooking(bookingId: string): Promise<void> {
+  await updateDoc(doc(db, COL, bookingId), {
+    pendingApproval: false,
+    updatedAt:       serverTimestamp(),
   });
 }
 

@@ -155,11 +155,15 @@ export function CalendarPortrait({ date, bookings, onSlotClick, onBookingClick }
               return (
                 <div
                   key={booking.id}
-                  className="absolute inset-x-2 rounded-[10px] px-3 py-2 overflow-hidden"
+                  className={cn(
+                    'absolute inset-x-2 rounded-[10px] px-3 py-2 overflow-hidden',
+                    booking.pendingApproval && 'border-2 border-dashed',
+                  )}
                   style={{
                     top,
                     height,
-                    backgroundColor: room.color + 'dd',
+                    backgroundColor: booking.pendingApproval ? room.color + '40' : room.color + 'dd',
+                    borderColor:     booking.pendingApproval ? room.textColor : undefined,
                     color:           room.textColor,
                   }}
                   onClick={(e) => { e.stopPropagation(); onBookingClick(booking); }}
@@ -168,6 +172,7 @@ export function CalendarPortrait({ date, bookings, onSlotClick, onBookingClick }
                   {height > 30 && (
                     <p className="text-[10px] opacity-80">
                       {format(startDate, 'HH:mm')}–{format(endDate, 'HH:mm')}
+                      {booking.pendingApproval && ' · ⏳'}
                     </p>
                   )}
                 </div>

@@ -30,6 +30,7 @@ export const DE_TO_EN: Record<string, string> = {
     'Combo (Imagine + Believe) — requires admin approval',
   'Diese Buchung wird als Ticket zur Freigabe an die Verwaltung geschickt.':
     'This booking will be sent as a ticket to admin for approval.',
+  'Wartet auf Freigabe durch Admin': 'Awaiting admin approval',
   'Von':                  'From',
   'Bis':                  'To',
   'Dauer':                'Duration',

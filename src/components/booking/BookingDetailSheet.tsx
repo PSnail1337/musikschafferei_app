@@ -106,6 +106,12 @@ export function BookingDetailSheet({ booking, onClose }: Props) {
           </div>
 
           <div className="px-5 py-4 space-y-4 overflow-y-auto max-h-[55vh]">
+            {booking.pendingApproval && (
+              <div className="badge bg-warning/15 text-warning text-xs px-2.5 py-1">
+                ⏳ {t('Wartet auf Freigabe durch Admin')}
+              </div>
+            )}
+
             {/* Time info */}
             <div className="card p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm text-text-primary font-semibold">
